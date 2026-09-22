@@ -1044,14 +1044,12 @@
               <label class="tog" style="margin-left:6px;"><input type="checkbox" checked><span class="sl"></span></label><span style="font-size:10px;">In-app</span>
               <label class="tog" style="margin-left:6px;"><input type="checkbox"><span class="sl"></span></label><span style="font-size:10px;">Email</span>
             </div>
-            <button class="btn bp bw" onclick="alert('📲 Notificación enviada a 189 usuarios activos ✅')">📲 Enviar notificación</button>
+            <button class="btn bp bw" onclick="alert('📲 Notificación enviada a '+USR.filter(u=>u.xp>0).length+' usuarios activos ✅')">📲 Enviar notificación</button>
           </div>
           <div class="card">
             <div class="st">📋 Historial</div>
-            <div style="font-size:10px;">
-              <div style="padding:5px 0;border-bottom:.5px solid var(--b);">📲 <strong>S3</strong> · "¡Vas a mitad del mes..." · 189 enviados · <span style="color:var(--txt2);">hace 2 días</span></div>
-              <div style="padding:5px 0;border-bottom:.5px solid var(--b);">📲 <strong>S2</strong> · "¡Semana 2 completada..." · 176 enviados · <span style="color:var(--txt2);">hace 7 días</span></div>
-              <div style="padding:5px 0;">📲 <strong>S1</strong> · "¡Bienvenidos al mes..." · 168 enviados · <span style="color:var(--txt2);">hace 14 días</span></div>
+            <div style="font-size:10px;" id="notif-historial">
+              <div class="notif na2"><div class="ni">📭</div><div class="nb"><div class="nt">Aún no se ha enviado ninguna notificación desde este panel</div></div></div>
             </div>
           </div>
         </div>
