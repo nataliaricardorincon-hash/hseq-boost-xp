@@ -1595,6 +1595,7 @@ function initFirebase(){
     const cfg={apiKey:"AIzaSyBGkcK7aHHs2ZH4Nr_jC-P-txqfRfwd5NY",authDomain:"hseq-boost-xp.firebaseapp.com",projectId:"hseq-boost-xp",storageBucket:"hseq-boost-xp.firebasestorage.app",messagingSenderId:"453401279187",appId:"1:453401279187:web:be21e1bc8d5939cf49f226"};
     firebase.initializeApp(cfg);
     dbFS=firebase.firestore();
+    dbFS.settings({experimentalAutoDetectLongPolling:true});
     restaurarParticipante();
   }catch(err){console.warn("Firebase no disponible",err);}
 }
