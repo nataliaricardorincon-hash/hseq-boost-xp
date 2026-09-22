@@ -779,31 +779,8 @@
   <!-- Podio top 3 -->
   <div class="card" style="background:linear-gradient(135deg,#fffbeb,#fef3c7);border-color:#fde68a;">
     <div class="st" style="border-color:var(--am);">🥇 Podio de Honor</div>
-    <div style="display:flex;align-items:flex-end;justify-content:center;gap:16px;padding:10px 0;">
-      <div style="display:flex;flex-direction:column;align-items:center;gap:5px;">
-        <div style="font-size:22px;">🥈</div>
-        <div style="width:70px;height:75px;background:linear-gradient(180deg,#94a3b8,#64748b);border-radius:8px 8px 0 0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;">2°</div>
-        <div style="font-size:11px;font-weight:800;color:var(--az);text-align:center;max-width:80px;">Carlos Morales</div>
-        <div style="font-size:10px;color:var(--txt2);">ANAVA LOG</div>
-        <div style="font-size:13px;font-weight:800;color:var(--xp);">287 XP</div>
-        <span class="bdg bga">🛡️ Guardián</span>
-      </div>
-      <div style="display:flex;flex-direction:column;align-items:center;gap:5px;">
-        <div style="font-size:28px;">🥇</div>
-        <div style="width:80px;height:100px;background:linear-gradient(180deg,var(--am),#f59e0b);border-radius:8px 8px 0 0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:var(--az);">🏆 1°</div>
-        <div style="font-size:12px;font-weight:800;color:var(--az);text-align:center;max-width:90px;">María Rodríguez</div>
-        <div style="font-size:10px;color:var(--txt2);">ANAVA FZ</div>
-        <div style="font-size:15px;font-weight:800;color:var(--xp);">312 XP</div>
-        <span class="bdg bgx">⭐ Héroe ANAVA</span>
-      </div>
-      <div style="display:flex;flex-direction:column;align-items:center;gap:5px;">
-        <div style="font-size:22px;">🥉</div>
-        <div style="width:70px;height:60px;background:linear-gradient(180deg,#fb923c,#ea580c);border-radius:8px 8px 0 0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;">3°</div>
-        <div style="font-size:11px;font-weight:800;color:var(--az);text-align:center;max-width:80px;">Ana Jiménez</div>
-        <div style="font-size:10px;color:var(--txt2);">ANAVA TRANS</div>
-        <div style="font-size:13px;font-weight:800;color:var(--xp);">265 XP</div>
-        <span class="bdg bgy">🏆 Campeón</span>
-      </div>
+    <div id="rk-podio" style="display:flex;align-items:flex-end;justify-content:center;gap:16px;padding:10px 0;flex-wrap:wrap;">
+      <div class="notif na2" style="width:100%;"><div class="ni">📭</div><div class="nb"><div class="nt">Aún no hay suficientes participantes para el podio</div></div></div>
     </div>
   </div>
   <!-- Filtros -->
@@ -911,10 +888,10 @@
       <div id="ap-overview" class="ap on">
         <div style="font-size:13px;font-weight:800;color:var(--az);margin-bottom:10px;">📊 Panel general</div>
         <div class="g4" style="margin-bottom:10px;">
-          <div class="kpi"><div class="kpi-n" style="color:var(--az);">248</div><div class="kpi-l">Registrados</div></div>
-          <div class="kpi"><div class="kpi-n" style="color:var(--ve);">189</div><div class="kpi-l">Activos</div></div>
-          <div class="kpi"><div class="kpi-n" style="color:var(--xp);">14,320</div><div class="kpi-l">XP total</div></div>
-          <div class="kpi"><div class="kpi-n" style="color:var(--na);">37</div><div class="kpi-l">ACIS</div></div>
+          <div class="kpi"><div class="kpi-n" id="ov-reg" style="color:var(--az);">0</div><div class="kpi-l">Registrados</div></div>
+          <div class="kpi"><div class="kpi-n" id="ov-act" style="color:var(--ve);">0</div><div class="kpi-l">Activos</div></div>
+          <div class="kpi"><div class="kpi-n" id="ov-xp" style="color:var(--xp);">0</div><div class="kpi-l">XP total</div></div>
+          <div class="kpi"><div class="kpi-n" id="ov-acis" style="color:var(--na);">0</div><div class="kpi-l">ACIS</div></div>
         </div>
         <div class="card">
           <div class="st">⚡ Acciones rápidas</div>
@@ -928,9 +905,7 @@
         </div>
         <div class="g2">
           <div class="card"><div class="st">🏆 Top participantes</div>
-            <div class="rank-item"><div class="rpos r1">1</div><div style="flex:1;font-size:11px;font-weight:700;">María Rodríguez</div><span style="color:var(--xp);font-size:11px;font-weight:800;">312 XP</span></div>
-            <div class="rank-item"><div class="rpos r2">2</div><div style="flex:1;font-size:11px;font-weight:700;">Carlos Morales</div><span style="color:var(--xp);font-size:11px;font-weight:800;">287 XP</span></div>
-            <div class="rank-item"><div class="rpos r3">3</div><div style="flex:1;font-size:11px;font-weight:700;">Ana Jiménez</div><span style="color:var(--xp);font-size:11px;font-weight:800;">265 XP</span></div>
+            <div id="ov-top3"><div class="notif na2"><div class="ni">📭</div><div class="nb"><div class="nt">Aún no hay participantes registrados</div></div></div></div>
           </div>
           <div class="card"><div class="st">📋 Estado del mes</div>
             <div style="margin-bottom:8px;"><div style="font-size:10px;font-weight:700;color:var(--txt2);margin-bottom:3px;">Semana 1 completada</div><div style="height:5px;border-radius:3px;background:#e2e8f0;overflow:hidden;"><div style="width:100%;height:100%;background:var(--ve);border-radius:3px;"></div></div></div>
@@ -1467,19 +1442,32 @@ async function cargarDatosAdminReales(){
     if(E("kpi-hoy"))E("kpi-hoy").textContent=DIAS30[DIAS30.length-1]||0;
     if(E("kpi-xphoy"))E("kpi-xphoy").textContent=eventos.filter(ev=>Date.now()-ev.timestamp<msDia).reduce((s,ev)=>s+(ev.xp||0),0).toLocaleString("es-CO");
 
+    // Panel general (Overview)
+    const regTot=parts.length,actTot=parts.filter(p=>(p.xp||0)>0).length,
+          xpTot=parts.reduce((s,p)=>s+(p.xp||0),0);
+    E("ov-reg")&&(E("ov-reg").textContent=regTot);
+    E("ov-act")&&(E("ov-act").textContent=actTot);
+    E("ov-xp")&&(E("ov-xp").textContent=xpTot.toLocaleString("es-CO"));
+    if(E("ov-acis")){
+      try{const aSnap=await dbFS.collection("acis_reportes").get();E("ov-acis").textContent=aSnap.docs.length;}catch(e){}
+    }
+    if(E("ov-top3")){
+      const top3=parts.slice().sort((a,b)=>(b.xp||0)-(a.xp||0)).slice(0,3);
+      E("ov-top3").innerHTML=top3.length?top3.map((p,i)=>`<div class="rank-item"><div class="rpos r${i+1}">${i+1}</div><div style="flex:1;font-size:11px;font-weight:700;">${p.nombre}</div><span style="color:var(--xp);font-size:11px;font-weight:800;">${p.xp||0} XP</span></div>`).join(""):'<div class="notif na2"><div class="ni">📭</div><div class="nb"><div class="nt">Aún no hay participantes registrados</div></div></div>';
+    }
+
     renderU();renderEmps();rP("mensual");rP("actividades");rP("ranking");rP("diaria");rP("semanal");
   }catch(err){console.warn("No se pudieron cargar datos reales de Firestore",err);}
 }
 function nivelDe(xp){const i=NIV_XP.reduce((acc,min,idx)=>xp>=min?idx:acc,0);return NIVELES[i];}
 async function cargarRankingPublico(){
-  if(!dbFS){filtRanking();return;}
+  if(!dbFS){filtRanking();renderPodio();return;}
   try{
     const snap=await dbFS.collection("participantes").get();
-    if(snap.docs.length){
-      RK_ALL=snap.docs.map(d=>{const p=d.data(),xp=p.xp||0;return{n:p.nombre,e:p.empresa,xp,niv:nivelDe(xp)};}).sort((a,b)=>b.xp-a.xp);
-    }
+    RK_ALL=snap.docs.map(d=>{const p=d.data(),xp=p.xp||0;return{n:p.nombre,e:p.empresa,xp,niv:nivelDe(xp)};}).sort((a,b)=>b.xp-a.xp);
   }catch(err){console.warn("No se pudo cargar el ranking real",err);}
   filtRanking();
+  renderPodio();
 }
 const ADMIN_PIN="ANAVA2026";
 function verificarPinAdmin(){
@@ -1500,7 +1488,7 @@ function chequearAccesoAdmin(){
   if(E("admin-content"))E("admin-content").style.display=ok?"block":"none";
   if(ok)cargarDatosAdminReales();
 }
-function A(e,a){document.querySelectorAll(".ap").forEach(e=>e.classList.remove("on")),document.querySelectorAll(".sb-item").forEach(e=>e.classList.remove("on"));const r=E("ap-"+e);if(r&&r.classList.add("on"),a)a.classList.add("on");else{const a=document.querySelector(`.sb-item[onclick*="'${e}'"]`);a&&a.classList.add("on")}"reportes"!==e||repInit||(repInit=!0,rP("exportar")),"usuarios"===e&&renderU(),"empresas"===e&&renderEmps(),"actividades"===e&&renderActs(),"xp-cfg"===e&&renderXPActs(),"acis"===e&&cargarAcisReales(),"simu"===e&&renderSimu(),"notif"===e&&renderNotif()}function R(e,a){document.querySelectorAll(".rpane").forEach(e=>e.classList.remove("on")),document.querySelectorAll(".rtab").forEach(e=>e.classList.remove("on"));const r=E("rp-"+e);r&&(r.classList.add("on"),rP(e)),a&&a.classList.add("on")}let HORAS=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],DIAS30=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],EMPS_D=[{"n":"ANAVA LOGISTICS","reg":0,"act":0,"pct":0,"xp":0,"acis":0,"centros":["ADAMA","BODEGA CARVAJAL","BODEGA NACIONAL BUN","C.L PARQUIAMERICA","CD FUNZA","COLTABACO CALI","DIABONOS","KOLCEM","MALTERIA","MELI BARRANQUILLA","MELI CARTAGENA","PUERTO ARGOS","YARA BPI CARTAGENA","YARA PPP CARTAGENA","ZFDP MULTICLIENTE","ZONA FRANCA CELPA","ZONA FRANCA PARQUE CENTRAL"]},{"n":"ANAVA TRANSPORT","reg":0,"act":0,"pct":0,"xp":0,"acis":0,"centros":["ADAMA","BODEGA CARVAJAL","C.L PARQUIAMERICA","CD T2 ARENOSA","CD T2 GALAPA","CD T2 GIRARDOT","COLTABACO BOGOTÁ","COLTABACO CALI","COLTABACO MEDELLIN","OFICINA BARRANQUILLA","OFICINA BOGOTA","OFICINA BUENAVENTURA","OFICINA CALI","ZFDP MIDEA","ZONA FRANCA CELPA","ZONA FRANCA PARQUE CENTRAL"]},{"n":"ANAVA FZ SERVICES","reg":0,"act":0,"pct":0,"xp":0,"acis":0,"centros":["ZFDP FURUKAWA","ZFDP MIDEA","ZFDP MULTICLIENTE","ZFDP PGI","ZONA FRANCA CELPA","ZONA FRANCA INTEXZONA","ZONA FRANCA PARQUE CENTRAL"]},{"n":"ANAVA INTERNATIONAL","reg":0,"act":0,"pct":0,"xp":0,"acis":0,"centros":["ZONA FRANCA PARQUE CENTRAL"]},{"n":"ANAVA HOLDINGS","reg":0,"act":0,"pct":0,"xp":0,"acis":0,"centros":["ZFDP MULTICLIENTE","ZONA FRANCA PARQUE CENTRAL"]},{"n":"ANAVA INFRASTRUCTURE","reg":0,"act":0,"pct":0,"xp":0,"acis":0,"centros":["NO APLICA"]},{"n":"3K COMMODITIES","reg":0,"act":0,"pct":0,"xp":0,"acis":0,"centros":["ZONA FRANCA PARQUE CENTRAL"]},{"n":"LOGREN","reg":0,"act":0,"pct":0,"xp":0,"acis":0,"centros":["ZFDP MIDEA"]}],TOP5CT=[],SEM=[{"s":"Semana 1","p":0,"xp":0},{"s":"Semana 2","p":0,"xp":0},{"s":"Semana 3","p":0,"xp":0},{"s":"Semana 4","p":0,"xp":0}],ACT_R=[],JUE_R=[],NIVELES=["🌱 Explorador","🛡️ Guardián","🦺 Protector","🏆 Campeón SSTA","⭐ Héroe ANAVA"],NIV_XP=[0,50,100,200,300],NAMES=["María Rodríguez","Carlos Morales","Ana Jiménez","Luis Martínez","Sandra Ruiz","Pedro Castillo","Laura Gómez","Javier Torres","Claudia Vargas","Andrés Pardo","Diana Mora","Fabio León","Natalia Cruz","Oswaldo Ríos","Paola Suárez","Rubén Díaz","Sara Mendoza","Tomás Nieto","Ursulina Castro","Valentina Reyes","William García","Ximena Herrera","Yolanda Ibáñez","Zulma Jiménez","Alberto Kattan","Beatriz Lopera","Camilo Medina","Diana Navas","Edgar Ochoa","Felipe Palacios"],USR=[];let uPage=0,uFilt=USR;const PG=10;function filtU(){const e=(E("u-search")||{}).value?.toLowerCase()||"",a=(E("u-emp")||{}).value||"",r=(E("u-est")||{}).value||"";uFilt=USR.filter(o=>(!e||o.n.toLowerCase().includes(e))&&(!a||o.e===a)&&(!r||o.est===r)),uPage=0,renderU()}function renderU(){if(!E("u-tbody"))return;const e=uFilt.slice(uPage*PG,(uPage+1)*PG);E("u-tbody").innerHTML=e.map((e,a)=>`<tr><td style="color:var(--txt2);">${uPage*PG+a+1}</td><td style="font-weight:700;">${e.n}</td><td style="font-size:10px;">${e.e.split(" ").pop()}</td><td style="font-size:10px;">${e.ct}</td><td><span style="color:var(--xp);font-weight:800;">${e.xp}</span></td><td style="font-size:10px;">${e.niv}</td><td><span class="bdg ${"Activo"===e.est?"bgv":"bgn"}">${e.est}</span></td></tr>`).join("");const a=Math.ceil(uFilt.length/PG);E("u-pager").innerHTML=`<span>${uFilt.length} usuarios</span><div style="display:flex;gap:4px;">${uPage>0?'<button class="btn bo bsm" onclick="uPage--;renderU()">◀</button>':""}<span style="padding:4px 8px;font-weight:700;">${uPage+1}/${a}</span>${uPage<a-1?'<button class="btn bo bsm" onclick="uPage++;renderU()">▶</button>':""}</div>`}function renderEmps(){E("emp-list")&&(E("emp-list").innerHTML=EMPS_D.map((e,a)=>`<div class="card" style="margin-bottom:6px;"><div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'"><div><span style="font-weight:800;color:var(--az);">🏢 ${e.n}</span><span class="bdg bga" style="margin-left:8px;">${e.reg} usuarios</span></div><span style="color:var(--ve);font-weight:800;">${e.pct}% ▾</span></div><div style="display:none;margin-top:8px;"><div style="font-size:10px;color:var(--txt2);margin-bottom:4px;">Centros de trabajo:</div>${e.centros.map(e=>`<span style="display:inline-block;background:var(--bg2);border-radius:6px;padding:2px 8px;font-size:10px;margin:2px;border:.5px solid var(--b);">📍 ${e}</span>`).join("")}</div></div>`).join(""))}const ACTS_D=[{n:"❤️ Apertura - Mi Compromiso",sem:"Todo el mes",xp:10,on:!0},{n:"🚨 Simulacro Nacional",sem:"Semana 2",xp:30,on:!0},{n:"🔍 Detector de Riesgos",sem:"Semana 1",xp:"1+10",on:!0},{n:"🦺 Mi EPP en Regla",sem:"Semana 1",xp:5,on:!0},{n:"🎡 Ruleta Digital SSTA",sem:"Semana 1",xp:10,on:!0},{n:"🔎 El Error Oculto",sem:"Semana 2",xp:8,on:!0},{n:"🦺 Reto del EPP",sem:"Semana 2",xp:15,on:!0},{n:"🔢 Ordena la Secuencia",sem:"Semana 2",xp:5,on:!0},{n:"🤔 ¿Qué harías tú?",sem:"Semana 3",xp:15,on:!0},{n:"👨‍👩‍👧 Mi Familia Me Espera",sem:"Semana 3",xp:10,on:!0},{n:"💚 Ruta Saludable",sem:"Semana 3",xp:5,on:!0},{n:"🧩 Mito o Realidad",sem:"Semana 4",xp:15,on:!0},{n:"♻️ Clasifica el Residuo",sem:"Semana 4",xp:15,on:!0},{n:"🌟 Compromiso SSTA Final",sem:"Semana 4",xp:15,on:!0},{n:"💛 Tarjeta Gracias por Cuidarme",sem:"Todo el mes",xp:5,on:!0},{n:"⚡ Código Dorado",sem:"Todo el mes",xp:"5-20",on:!0}];function renderActs(){E("acts-list")&&(E("acts-list").innerHTML=ACTS_D.map((e,a)=>`<div style="display:flex;align-items:center;gap:8px;padding:8px;border-bottom:.5px solid var(--b);font-size:11px;"><label class="tog"><input type="checkbox" ${e.on?"checked":""}><span class="sl"></span></label><div style="flex:1;"><span style="font-weight:700;">${e.n}</span><span style="color:var(--txt2);margin-left:6px;font-size:10px;">${e.sem}</span></div><span class="xp-tag">${e.xp} XP</span></div>`).join(""))}const XP_ACTS=[{n:"Apertura",xp:10},{n:"Simulacro",xp:30},{n:"Detector de Riesgos",xp:1},{n:"Mi EPP en Regla",xp:5},{n:"Ruleta (Semana 1)",xp:10},{n:"El Error Oculto",xp:8},{n:"Reto del EPP",xp:15},{n:"Ordena la Secuencia",xp:5},{n:"¿Qué harías tú?",xp:15},{n:"Mi Familia Me Espera",xp:10},{n:"Ruta Saludable",xp:5},{n:"Mito o Realidad",xp:15},{n:"Clasifica el Residuo",xp:15},{n:"Compromiso Final",xp:15},{n:"Tarjeta Gracias",xp:5},{n:"Código Dorado",xp:20},{n:"Trivias",xp:15},{n:"Verdadero o Falso",xp:15},{n:"Sí o No",xp:30},{n:"Sopa de letras",xp:20},{n:"Ruleta (Juegos)",xp:15},{n:"Memorama",xp:15},{n:"Mini Casos (por caso)",xp:5},{n:"Identificar Peligros",xp:15},{n:"Crucigramas",xp:30}];function renderXPActs(){E("xp-acts-list")&&(E("xp-acts-list").innerHTML=XP_ACTS.map(e=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:.5px solid var(--b);font-size:11px;"><span>${e.n}</span><div style="display:flex;align-items:center;gap:6px;"><input type="number" value="${e.xp}" class="fi" style="width:60px;padding:4px 6px;text-align:center;"><span style="font-size:10px;color:var(--txt2);">XP</span></div></div>`).join("")+'<div style="margin-top:8px;"><button class="btn bpa bsm" onclick="alert(\'✅ XP guardado correctamente\')">💾 Guardar XP</button></div>')}let ACIS_REALES=[];
+function A(e,a){document.querySelectorAll(".ap").forEach(e=>e.classList.remove("on")),document.querySelectorAll(".sb-item").forEach(e=>e.classList.remove("on"));const r=E("ap-"+e);if(r&&r.classList.add("on"),a)a.classList.add("on");else{const a=document.querySelector(`.sb-item[onclick*="'${e}'"]`);a&&a.classList.add("on")}"reportes"!==e||repInit||(repInit=!0,rP("exportar")),"usuarios"===e&&renderU(),"empresas"===e&&renderEmps(),"actividades"===e&&renderActs(),"xp-cfg"===e&&renderXPActs(),"acis"===e&&cargarAcisReales(),"simu"===e&&renderSimu(),"notif"===e&&renderNotif()}function R(e,a){document.querySelectorAll(".rpane").forEach(e=>e.classList.remove("on")),document.querySelectorAll(".rtab").forEach(e=>e.classList.remove("on"));const r=E("rp-"+e);r&&(r.classList.add("on"),rP(e)),a&&a.classList.add("on")}let HORAS=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],DIAS30=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],EMPS_D=[{"n":"ANAVA LOGISTICS","reg":0,"act":0,"pct":0,"xp":0,"acis":0,"centros":["ADAMA","BODEGA CARVAJAL","BODEGA NACIONAL BUN","C.L PARQUIAMERICA","CD FUNZA","COLTABACO CALI","DIABONOS","KOLCEM","MALTERIA","MELI BARRANQUILLA","MELI CARTAGENA","PUERTO ARGOS","YARA BPI CARTAGENA","YARA PPP CARTAGENA","ZFDP MULTICLIENTE","ZONA FRANCA CELPA","ZONA FRANCA PARQUE CENTRAL"]},{"n":"ANAVA TRANSPORT","reg":0,"act":0,"pct":0,"xp":0,"acis":0,"centros":["ADAMA","BODEGA CARVAJAL","C.L PARQUIAMERICA","CD T2 ARENOSA","CD T2 GALAPA","CD T2 GIRARDOT","COLTABACO BOGOTÁ","COLTABACO CALI","COLTABACO MEDELLIN","OFICINA BARRANQUILLA","OFICINA BOGOTA","OFICINA BUENAVENTURA","OFICINA CALI","ZFDP MIDEA","ZONA FRANCA CELPA","ZONA FRANCA PARQUE CENTRAL"]},{"n":"ANAVA FZ SERVICES","reg":0,"act":0,"pct":0,"xp":0,"acis":0,"centros":["ZFDP FURUKAWA","ZFDP MIDEA","ZFDP MULTICLIENTE","ZFDP PGI","ZONA FRANCA CELPA","ZONA FRANCA INTEXZONA","ZONA FRANCA PARQUE CENTRAL"]},{"n":"ANAVA INTERNATIONAL","reg":0,"act":0,"pct":0,"xp":0,"acis":0,"centros":["ZONA FRANCA PARQUE CENTRAL"]},{"n":"ANAVA HOLDINGS","reg":0,"act":0,"pct":0,"xp":0,"acis":0,"centros":["ZFDP MULTICLIENTE","ZONA FRANCA PARQUE CENTRAL"]},{"n":"ANAVA INFRASTRUCTURE","reg":0,"act":0,"pct":0,"xp":0,"acis":0,"centros":["NO APLICA"]},{"n":"3K COMMODITIES","reg":0,"act":0,"pct":0,"xp":0,"acis":0,"centros":["ZONA FRANCA PARQUE CENTRAL"]},{"n":"LOGREN","reg":0,"act":0,"pct":0,"xp":0,"acis":0,"centros":["ZFDP MIDEA"]}],TOP5CT=[],SEM=[{"s":"Semana 1","p":0,"xp":0},{"s":"Semana 2","p":0,"xp":0},{"s":"Semana 3","p":0,"xp":0},{"s":"Semana 4","p":0,"xp":0}],ACT_R=[],JUE_R=[],NIVELES=["🌱 Explorador","🛡️ Guardián","🦺 Protector","🏆 Campeón SSTA","⭐ Héroe ANAVA"],NIV_XP=[0,50,100,200,300],NAMES=[],USR=[];let uPage=0,uFilt=USR;const PG=10;function filtU(){const e=(E("u-search")||{}).value?.toLowerCase()||"",a=(E("u-emp")||{}).value||"",r=(E("u-est")||{}).value||"";uFilt=USR.filter(o=>(!e||o.n.toLowerCase().includes(e))&&(!a||o.e===a)&&(!r||o.est===r)),uPage=0,renderU()}function renderU(){if(!E("u-tbody"))return;const e=uFilt.slice(uPage*PG,(uPage+1)*PG);E("u-tbody").innerHTML=e.map((e,a)=>`<tr><td style="color:var(--txt2);">${uPage*PG+a+1}</td><td style="font-weight:700;">${e.n}</td><td style="font-size:10px;">${e.e.split(" ").pop()}</td><td style="font-size:10px;">${e.ct}</td><td><span style="color:var(--xp);font-weight:800;">${e.xp}</span></td><td style="font-size:10px;">${e.niv}</td><td><span class="bdg ${"Activo"===e.est?"bgv":"bgn"}">${e.est}</span></td></tr>`).join("");const a=Math.ceil(uFilt.length/PG);E("u-pager").innerHTML=`<span>${uFilt.length} usuarios</span><div style="display:flex;gap:4px;">${uPage>0?'<button class="btn bo bsm" onclick="uPage--;renderU()">◀</button>':""}<span style="padding:4px 8px;font-weight:700;">${uPage+1}/${a}</span>${uPage<a-1?'<button class="btn bo bsm" onclick="uPage++;renderU()">▶</button>':""}</div>`}function renderEmps(){E("emp-list")&&(E("emp-list").innerHTML=EMPS_D.map((e,a)=>`<div class="card" style="margin-bottom:6px;"><div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'"><div><span style="font-weight:800;color:var(--az);">🏢 ${e.n}</span><span class="bdg bga" style="margin-left:8px;">${e.reg} usuarios</span></div><span style="color:var(--ve);font-weight:800;">${e.pct}% ▾</span></div><div style="display:none;margin-top:8px;"><div style="font-size:10px;color:var(--txt2);margin-bottom:4px;">Centros de trabajo:</div>${e.centros.map(e=>`<span style="display:inline-block;background:var(--bg2);border-radius:6px;padding:2px 8px;font-size:10px;margin:2px;border:.5px solid var(--b);">📍 ${e}</span>`).join("")}</div></div>`).join(""))}const ACTS_D=[{n:"❤️ Apertura - Mi Compromiso",sem:"Todo el mes",xp:10,on:!0},{n:"🚨 Simulacro Nacional",sem:"Semana 2",xp:30,on:!0},{n:"🔍 Detector de Riesgos",sem:"Semana 1",xp:"1+10",on:!0},{n:"🦺 Mi EPP en Regla",sem:"Semana 1",xp:5,on:!0},{n:"🎡 Ruleta Digital SSTA",sem:"Semana 1",xp:10,on:!0},{n:"🔎 El Error Oculto",sem:"Semana 2",xp:8,on:!0},{n:"🦺 Reto del EPP",sem:"Semana 2",xp:15,on:!0},{n:"🔢 Ordena la Secuencia",sem:"Semana 2",xp:5,on:!0},{n:"🤔 ¿Qué harías tú?",sem:"Semana 3",xp:15,on:!0},{n:"👨‍👩‍👧 Mi Familia Me Espera",sem:"Semana 3",xp:10,on:!0},{n:"💚 Ruta Saludable",sem:"Semana 3",xp:5,on:!0},{n:"🧩 Mito o Realidad",sem:"Semana 4",xp:15,on:!0},{n:"♻️ Clasifica el Residuo",sem:"Semana 4",xp:15,on:!0},{n:"🌟 Compromiso SSTA Final",sem:"Semana 4",xp:15,on:!0},{n:"💛 Tarjeta Gracias por Cuidarme",sem:"Todo el mes",xp:5,on:!0},{n:"⚡ Código Dorado",sem:"Todo el mes",xp:"5-20",on:!0}];function renderActs(){E("acts-list")&&(E("acts-list").innerHTML=ACTS_D.map((e,a)=>`<div style="display:flex;align-items:center;gap:8px;padding:8px;border-bottom:.5px solid var(--b);font-size:11px;"><label class="tog"><input type="checkbox" ${e.on?"checked":""}><span class="sl"></span></label><div style="flex:1;"><span style="font-weight:700;">${e.n}</span><span style="color:var(--txt2);margin-left:6px;font-size:10px;">${e.sem}</span></div><span class="xp-tag">${e.xp} XP</span></div>`).join(""))}const XP_ACTS=[{n:"Apertura",xp:10},{n:"Simulacro",xp:30},{n:"Detector de Riesgos",xp:1},{n:"Mi EPP en Regla",xp:5},{n:"Ruleta (Semana 1)",xp:10},{n:"El Error Oculto",xp:8},{n:"Reto del EPP",xp:15},{n:"Ordena la Secuencia",xp:5},{n:"¿Qué harías tú?",xp:15},{n:"Mi Familia Me Espera",xp:10},{n:"Ruta Saludable",xp:5},{n:"Mito o Realidad",xp:15},{n:"Clasifica el Residuo",xp:15},{n:"Compromiso Final",xp:15},{n:"Tarjeta Gracias",xp:5},{n:"Código Dorado",xp:20},{n:"Trivias",xp:15},{n:"Verdadero o Falso",xp:15},{n:"Sí o No",xp:30},{n:"Sopa de letras",xp:20},{n:"Ruleta (Juegos)",xp:15},{n:"Memorama",xp:15},{n:"Mini Casos (por caso)",xp:5},{n:"Identificar Peligros",xp:15},{n:"Crucigramas",xp:30}];function renderXPActs(){E("xp-acts-list")&&(E("xp-acts-list").innerHTML=XP_ACTS.map(e=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:.5px solid var(--b);font-size:11px;"><span>${e.n}</span><div style="display:flex;align-items:center;gap:6px;"><input type="number" value="${e.xp}" class="fi" style="width:60px;padding:4px 6px;text-align:center;"><span style="font-size:10px;color:var(--txt2);">XP</span></div></div>`).join("")+'<div style="margin-top:8px;"><button class="btn bpa bsm" onclick="alert(\'✅ XP guardado correctamente\')">💾 Guardar XP</button></div>')}let ACIS_REALES=[];
 async function cargarAcisReales(){
   if(!dbFS)return;
   try{
@@ -1746,6 +1734,30 @@ async function cargarInsigniasReales(){
   const xp=participante.xp||0,desbloq=INSIGNIAS.filter(i=>insigniaDesbloqueada(i,acts,xp)).length;
   E("ins-resumen")&&(E("ins-resumen").textContent=participante.nombre+" tiene "+desbloq+"/"+INSIGNIAS.length+" insignias desbloqueadas · "+xp+" XP acumulados · Nivel: "+nivelDe(xp));
   renderInsignias(acts,xp);
+}
+function renderPodio(){
+  const el=E("rk-podio");if(!el)return;
+  const top3=RK_ALL.slice(0,3);
+  if(top3.length<1){el.innerHTML='<div class="notif na2" style="width:100%;"><div class="ni">📭</div><div class="nb"><div class="nt">Aún no hay suficientes participantes para el podio</div></div></div>';return;}
+  const cfg=[
+    {pos:2,medalla:"🥈",h:75,w:70,grad:"linear-gradient(180deg,#94a3b8,#64748b)",fnum:11,fname:11,fw:80,fxp:13},
+    {pos:1,medalla:"🥇",h:100,w:80,grad:"linear-gradient(180deg,var(--am),#f59e0b)",fnum:12,fname:12,fw:90,fxp:15},
+    {pos:3,medalla:"🥉",h:60,w:70,grad:"linear-gradient(180deg,#fb923c,#ea580c)",fnum:11,fname:11,fw:80,fxp:13}
+  ];
+  const bdgClase={0:"bgx",1:"bga",2:"bgy"};
+  el.innerHTML=cfg.map(c=>{
+    const p=top3[c.pos-1];
+    if(!p)return"";
+    const idxNiv=NIVELES.indexOf(p.niv);
+    return `<div style="display:flex;flex-direction:column;align-items:center;gap:5px;">
+      <div style="font-size:${c.pos===1?28:22}px;">${c.medalla}</div>
+      <div style="width:${c.w}px;height:${c.h}px;background:${c.grad};border-radius:8px 8px 0 0;display:flex;align-items:center;justify-content:center;font-size:${c.pos===1?12:11}px;font-weight:800;color:${c.pos===1?"var(--az)":"#fff"};">${c.pos===1?"🏆 1°":c.pos+"°"}</div>
+      <div style="font-size:${c.fname}px;font-weight:800;color:var(--az);text-align:center;max-width:${c.fw}px;">${p.n}</div>
+      <div style="font-size:10px;color:var(--txt2);">${EMPRESA_CODE[p.e]||p.e}</div>
+      <div style="font-size:${c.fxp}px;font-weight:800;color:var(--xp);">${p.xp} XP</div>
+      <span class="bdg ${bdgClase[c.pos-1]}">${p.niv}</span>
+    </div>`;
+  }).join("");
 }
 function renderInsignias(acts,xp){acts=acts||[];xp=xp||0;E("insignias-grid")&&(E("insignias-grid").innerHTML=INSIGNIAS.map(e=>{const d=insigniaDesbloqueada(e,acts,xp);return `
     <div onclick="alert('${e.ico} ${e.n}\n\n${e.desc}\n\n${d?"✅ ¡Ya la tienes!":"🔒 Aún no desbloqueada. Sigue participando."}')"
