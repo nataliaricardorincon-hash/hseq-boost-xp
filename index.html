@@ -130,7 +130,7 @@
     <div class="fg"><label class="fl">Observaciones (opcional)</label><textarea class="fi" rows="2" placeholder="Describe brevemente tu participación..."></textarea></div>
     <div class="fg">
       <label class="fl">Fotografías del simulacro (opcional)</label>
-      <input type="file" id="sim-foto-input" accept="image/*" multiple capture="environment" style="display:none;" onchange="agregarFotosSimulacro(this.files)">
+      <input type="file" id="sim-foto-input" accept="image/*" multiple style="display:none;" onchange="agregarFotosSimulacro(this.files)">
       <button type="button" class="btn bo bw" onclick="document.getElementById('sim-foto-input').click()">📷 Adjuntar fotografías</button>
       <div id="sim-fotos-grid" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;"></div>
       <div id="sim-fotos-count" style="font-size:10px;color:var(--txt2);margin-top:4px;"></div>
@@ -167,7 +167,7 @@
     <div class="fg"><label class="fl">Describe el riesgo identificado</label><textarea class="fi" id="det-desc" rows="2" placeholder="Ej: cable suelto en el pasillo del área de cargue..."></textarea></div>
     <div class="fg">
       <label class="fl">Fotografía del riesgo (opcional)</label>
-      <input type="file" id="det-foto-input" accept="image/*" multiple capture="environment" style="display:none;" onchange="agregarFotoGen(this.files,'det')">
+      <input type="file" id="det-foto-input" accept="image/*" multiple style="display:none;" onchange="agregarFotoGen(this.files,'det')">
       <button type="button" class="btn bo bw" onclick="document.getElementById('det-foto-input').click()">📷 Adjuntar fotografía</button>
       <div id="det-fotos-grid" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;"></div>
     </div>
