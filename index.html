@@ -1674,7 +1674,17 @@ function guardarXPFirebase(xp,actividad){
   dbFS.collection("xp_eventos").add({participanteId:participante.fid,participanteNombre:participante.nombre,empresa:participante.empresa,centro:participante.centro,actividad:actividad||"Actividad",xp:xp,timestamp:Date.now()}).catch(()=>{});
 }
 function sumarXP(n,actividad){if(!n)return;if(!participante){const e=E("xp-bar");return void(e&&(e.innerHTML='⚠️ Debes <a href="#" onclick="N(\'registro\',null);return false;" style="color:var(--az);text-decoration:underline;">registrarte</a> para que tu XP quede guardado a tu nombre',e.classList.remove("xp-pulse"),e.offsetWidth,e.classList.add("xp-pulse")))}participante.xp+=n,renderXpBar();const a=E("xp-bar");a&&(a.classList.remove("xp-pulse"),a.offsetWidth,a.classList.add("xp-pulse")),guardarXPFirebase(n,actividad)}
-initFirebase();function renderXpBar(){const e=E("xp-bar");e&&(e.innerHTML=participante?"⭐ "+participante.nombre+' · Tu XP acumulado: <span id="global-xp">'+participante.xp+"</span>":'⚠️ <a href="#" onclick="N(\'registro\',null);return false;" style="color:var(--az);text-decoration:underline;">Regístrate</a> para empezar a acumular tu XP')}function registrarApertura(){alert("¡Compromiso registrado! +10 XP ❤️\n\nTu compromiso quedó guardado. Al cierre del mes lo volverás a ver."),sumarXP(10,"Apertura")}function togglePanelExclusive(e){const a=E("pan-"+e),r=a&&"block"===a.style.display;document.querySelectorAll(".week-panel").forEach(e=>e.style.display="none"),a&&(a.style.display=r?"none":"block")}function irAJuegos(e){N("juegos",null),selJT(e,null)}function comprimirImagen(archivo,maxDim,calidad){
+initFirebase();function renderXpBar(){const e=E("xp-bar");e&&(e.innerHTML=participante?"⭐ "+participante.nombre+' · Tu XP acumulado: <span id="global-xp">'+participante.xp+"</span>":'⚠️ <a href="#" onclick="N(\'registro\',null);return false;" style="color:var(--az);text-decoration:underline;">Regístrate</a> para empezar a acumular tu XP')}async function registrarApertura(){
+  if(!participante){alert("⚠️ Debes registrarte primero en la pestaña Registro.");return;}
+  if(dbFS&&participante.fid){
+    try{
+      const yaHecho=await dbFS.collection("xp_eventos").where("participanteId","==",participante.fid).where("actividad","==","Apertura").limit(1).get();
+      if(!yaHecho.empty){alert("✅ Ya registraste tu compromiso de Apertura — no puedes volver a enviarlo.");return;}
+    }catch(err){console.warn("No se pudo verificar el envío previo",err);}
+  }
+  alert("¡Compromiso registrado! +10 XP ❤️\n\nTu compromiso quedó guardado. Al cierre del mes lo volverás a ver.");
+  sumarXP(10,"Apertura");
+}function togglePanelExclusive(e){const a=E("pan-"+e),r=a&&"block"===a.style.display;document.querySelectorAll(".week-panel").forEach(e=>e.style.display="none"),a&&(a.style.display=r?"none":"block")}function irAJuegos(e){N("juegos",null),selJT(e,null)}function comprimirImagen(archivo,maxDim,calidad){
   return new Promise((resolve,reject)=>{
     const lector=new FileReader();
     lector.onload=e=>{
@@ -1753,7 +1763,18 @@ const RESIDUOS_BANCO=[
 {q:"¿A qué contenedor va: Hojas de papel de oficina?",ops:RESIDUOS_OPS,c:0},
 {q:"¿A qué contenedor va: Restos de poda o jardín?",ops:RESIDUOS_OPS,c:1}
 ];
-function abrirResiduos(){togglePanelExclusive("residuos"),iniciarQuizGenerico("s4res",RESIDUOS_BANCO,15)}function abrirCompromiso(){togglePanelExclusive("compromiso"),E("comp-resultado").innerHTML=""}function enviarCompromiso(){E("comp-check").checked?(E("comp-resultado").innerHTML='<div class="notif nv"><div class="ni">🌟</div><div class="nb"><div class="nt">¡Compromiso registrado! +15 XP</div><div class="nm">Gracias por renovar tu compromiso con la seguridad y la vida.</div></div></div>',E("comp-texto").value="",sumarXP(15,"Compromiso Final")):alert("Marca la casilla de compromiso para continuar.")}let simFotos=[];function agregarFotosSimulacro(e){
+function abrirResiduos(){togglePanelExclusive("residuos"),iniciarQuizGenerico("s4res",RESIDUOS_BANCO,15)}function abrirCompromiso(){togglePanelExclusive("compromiso"),E("comp-resultado").innerHTML=""}async function enviarCompromiso(){
+  if(!E("comp-check").checked)return void alert("Marca la casilla de compromiso para continuar.");
+  if(!participante){alert("⚠️ Debes registrarte primero en la pestaña Registro.");return;}
+  if(dbFS&&participante.fid){
+    try{
+      const yaHecho=await dbFS.collection("xp_eventos").where("participanteId","==",participante.fid).where("actividad","==","Compromiso Final").limit(1).get();
+      if(!yaHecho.empty){alert("✅ Ya registraste tu compromiso final — no puedes volver a enviarlo.");return;}
+    }catch(err){console.warn("No se pudo verificar el envío previo",err);}
+  }
+  E("comp-resultado").innerHTML='<div class="notif nv"><div class="ni">🌟</div><div class="nb"><div class="nt">¡Compromiso registrado! +15 XP</div><div class="nm">Gracias por renovar tu compromiso con la seguridad y la vida.</div></div></div>';
+  E("comp-texto").value="",sumarXP(15,"Compromiso Final");
+}let simFotos=[];function agregarFotosSimulacro(e){
   Array.from(e).forEach(e=>{
     if(!e.type.startsWith("image/"))return;
     if(simFotos.length>=3){alert("Máximo 3 fotos por registro.");return;}
