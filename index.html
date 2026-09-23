@@ -1749,7 +1749,14 @@ function abrirResiduos(){togglePanelExclusive("residuos"),iniciarQuizGenerico("s
     comprimirImagen(e,700,0.6).then(dataUrl=>{simFotos.push({name:e.name,dataUrl}),renderSimFotos()}).catch(()=>{});
   });
   E("sim-foto-input").value="";
-}function renderSimFotos(){const e=E("sim-fotos-grid");e&&(e.innerHTML=simFotos.map((e,a)=>`\n    <div style="position:relative;width:64px;height:64px;">\n      <img src="${e.dataUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;border:1px solid var(--b);">\n      <button type="button" onclick="quitarFotoSimulacro(${a})" style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;background:var(--ro);color:#fff;border:none;font-size:10px;cursor:pointer;line-height:1;padding:0;">✕</button>\n    </div>`).join(""),E("sim-fotos-count").textContent=simFotos.length?simFotos.length+" foto(s) adjunta(s)":"")}function quitarFotoSimulacro(e){simFotos.splice(e,1),renderSimFotos()}function registrarSimulacro(){
+}function renderSimFotos(){const e=E("sim-fotos-grid");e&&(e.innerHTML=simFotos.map((e,a)=>`\n    <div style="position:relative;width:64px;height:64px;">\n      <img src="${e.dataUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;border:1px solid var(--b);">\n      <button type="button" onclick="quitarFotoSimulacro(${a})" style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;background:var(--ro);color:#fff;border:none;font-size:10px;cursor:pointer;line-height:1;padding:0;">✕</button>\n    </div>`).join(""),E("sim-fotos-count").textContent=simFotos.length?simFotos.length+" foto(s) adjunta(s)":"")}function quitarFotoSimulacro(e){simFotos.splice(e,1),renderSimFotos()}async function registrarSimulacro(){
+  if(!participante){alert("⚠️ Debes registrarte primero en la pestaña Registro.");return;}
+  if(dbFS&&participante.fid){
+    try{
+      const yaHecho=await dbFS.collection("xp_eventos").where("participanteId","==",participante.fid).where("actividad","==","Simulacro").limit(1).get();
+      if(!yaHecho.empty){alert("✅ Ya registraste tu participación en el simulacro este mes — no puedes volver a registrarla.");return;}
+    }catch(err){console.warn("No se pudo verificar el simulacro previo",err);}
+  }
   const escenario=(E("sim-escenario")||{}).value||"",
         centro=(E("sim-centro")||{}).value||"",
         obs=(E("sim-obs")||{}).value.trim()||"",
