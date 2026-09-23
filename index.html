@@ -848,7 +848,7 @@
   <div id="admin-gate" class="card" style="max-width:320px;margin:60px auto;text-align:center;">
     <div style="font-size:32px;">🔒</div>
     <div style="font-size:13px;font-weight:800;color:var(--az);margin:8px 0;">Acceso restringido</div>
-    <div style="font-size:11px;color:var(--txt2);margin-bottom:12px;">Este panel es solo para el equipo HSEQ y la administración de la campaña. Si eres participante, vuelve al inicio para seguir sumando XP.</div>
+    <div style="font-size:11px;color:var(--txt2);margin-bottom:12px;">Panel exclusivo del equipo HSEQ y la administración de la campaña. Cada centro de trabajo tiene su propia clave. Si eres participante, vuelve al inicio para seguir sumando XP.</div>
     <input type="password" class="fi" id="admin-pin" placeholder="Clave" style="text-align:center;margin-bottom:8px;" onkeydown="if(event.key==='Enter')verificarPinAdmin()">
     <button class="btn bpa bw" onclick="verificarPinAdmin()">Entrar</button>
     <div id="admin-pin-error" style="color:var(--ro);font-size:10px;margin-top:8px;"></div>
@@ -1545,17 +1545,36 @@ function tocarLogo(){
 }
 /* ===== CONTROL DE ACCESO POR ROLES ===== */
 const CLAVES={
-  /* --- Administración general (acceso total) --- */
+  /* --- Administración general: acceso total --- */
   "ANAVA-GNRL-2026":{rol:"general", nombre:"Administrador General", badge:"🔐 Admin General", centro:null},
-  /* --- HSEQ: solo Validar ACIS, Simulacro y Reportes --- */
-  "HSEQ-CTG-2026":  {rol:"hseq", nombre:"HSEQ Cartagena",        badge:"🦺 HSEQ", centro:"ZONA FRANCA PARQUE CENTRAL"},
-  "HSEQ-YARA-2026": {rol:"hseq", nombre:"HSEQ Yara PPP",          badge:"🦺 HSEQ", centro:"YARA PPP CARTAGENA"},
-  "HSEQ-ADAMA-2026":{rol:"hseq", nombre:"HSEQ Adama",             badge:"🦺 HSEQ", centro:"ADAMA"},
-  "HSEQ-ARGOS-2026":{rol:"hseq", nombre:"HSEQ Puerto Argos",      badge:"🦺 HSEQ", centro:"PUERTO ARGOS"},
-  "HSEQ-CALI-2026": {rol:"hseq", nombre:"HSEQ Suroccidente",      badge:"🦺 HSEQ", centro:null},
-  "HSEQ-BOG-2026":  {rol:"hseq", nombre:"HSEQ Bogotá",            badge:"🦺 HSEQ", centro:null},
-  "HSEQ-MED-2026":  {rol:"hseq", nombre:"HSEQ Medellín",          badge:"🦺 HSEQ", centro:null},
-  "HSEQ-BQLLA-2026":{rol:"hseq", nombre:"HSEQ Barranquilla",      badge:"🦺 HSEQ", centro:null}
+  /* --- Una clave por centro de trabajo. Solo Validar ACIS, Simulacro y Reportes, y únicamente de su centro. --- */
+  "HSEQ-ADAMA-2026":       {rol:"hseq", nombre:"HSEQ Adama", badge:"🦺 HSEQ", centro:"ADAMA"},
+  "HSEQ-CARVAJAL-2026":    {rol:"hseq", nombre:"HSEQ Bodega Carvajal", badge:"🦺 HSEQ", centro:"BODEGA CARVAJAL"},
+  "HSEQ-BUNAVE-2026":      {rol:"hseq", nombre:"HSEQ Bodega Nacional Bun", badge:"🦺 HSEQ", centro:"BODEGA NACIONAL BUN"},
+  "HSEQ-PARQUIAM-2026":    {rol:"hseq", nombre:"HSEQ C.L Parquiamerica", badge:"🦺 HSEQ", centro:"C.L PARQUIAMERICA"},
+  "HSEQ-FUNZA-2026":       {rol:"hseq", nombre:"HSEQ Cd Funza", badge:"🦺 HSEQ", centro:"CD FUNZA"},
+  "HSEQ-COLTBOG-2026":     {rol:"hseq", nombre:"HSEQ Coltabaco Bogotá", badge:"🦺 HSEQ", centro:"COLTABACO BOGOTÁ"},
+  "HSEQ-COLTCALI-2026":    {rol:"hseq", nombre:"HSEQ Coltabaco Cali", badge:"🦺 HSEQ", centro:"COLTABACO CALI"},
+  "HSEQ-COLTMED-2026":     {rol:"hseq", nombre:"HSEQ Coltabaco Medellin", badge:"🦺 HSEQ", centro:"COLTABACO MEDELLIN"},
+  "HSEQ-DIABONOS-2026":    {rol:"hseq", nombre:"HSEQ Diabonos", badge:"🦺 HSEQ", centro:"DIABONOS"},
+  "HSEQ-KOLCEM-2026":      {rol:"hseq", nombre:"HSEQ Kolcem", badge:"🦺 HSEQ", centro:"KOLCEM"},
+  "HSEQ-MALTERIA-2026":    {rol:"hseq", nombre:"HSEQ Malteria", badge:"🦺 HSEQ", centro:"MALTERIA"},
+  "HSEQ-MELIBQ-2026":      {rol:"hseq", nombre:"HSEQ Meli Barranquilla", badge:"🦺 HSEQ", centro:"MELI BARRANQUILLA"},
+  "HSEQ-MELICTG-2026":     {rol:"hseq", nombre:"HSEQ Meli Cartagena", badge:"🦺 HSEQ", centro:"MELI CARTAGENA"},
+  "HSEQ-OFIBQ-2026":       {rol:"hseq", nombre:"HSEQ Oficina Barranquilla", badge:"🦺 HSEQ", centro:"OFICINA BARRANQUILLA"},
+  "HSEQ-OFIBOG-2026":      {rol:"hseq", nombre:"HSEQ Oficina Bogota", badge:"🦺 HSEQ", centro:"OFICINA BOGOTA"},
+  "HSEQ-OFIBUN-2026":      {rol:"hseq", nombre:"HSEQ Oficina Buenaventura", badge:"🦺 HSEQ", centro:"OFICINA BUENAVENTURA"},
+  "HSEQ-OFICALI-2026":     {rol:"hseq", nombre:"HSEQ Oficina Cali", badge:"🦺 HSEQ", centro:"OFICINA CALI"},
+  "HSEQ-ARGOS-2026":       {rol:"hseq", nombre:"HSEQ Puerto Argos", badge:"🦺 HSEQ", centro:"PUERTO ARGOS"},
+  "HSEQ-YARABPI-2026":     {rol:"hseq", nombre:"HSEQ Yara Bpi Cartagena", badge:"🦺 HSEQ", centro:"YARA BPI CARTAGENA"},
+  "HSEQ-YARAPPP-2026":     {rol:"hseq", nombre:"HSEQ Yara Ppp Cartagena", badge:"🦺 HSEQ", centro:"YARA PPP CARTAGENA"},
+  "HSEQ-FURUKAWA-2026":    {rol:"hseq", nombre:"HSEQ Zfdp Furukawa", badge:"🦺 HSEQ", centro:"ZFDP FURUKAWA"},
+  "HSEQ-MIDEA-2026":       {rol:"hseq", nombre:"HSEQ Zfdp Midea", badge:"🦺 HSEQ", centro:"ZFDP MIDEA"},
+  "HSEQ-ZFDPMULTI-2026":   {rol:"hseq", nombre:"HSEQ Zfdp Multicliente", badge:"🦺 HSEQ", centro:"ZFDP MULTICLIENTE"},
+  "HSEQ-PGI-2026":         {rol:"hseq", nombre:"HSEQ Zfdp Pgi", badge:"🦺 HSEQ", centro:"ZFDP PGI"},
+  "HSEQ-CELPA-2026":       {rol:"hseq", nombre:"HSEQ Zona Franca Celpa", badge:"🦺 HSEQ", centro:"ZONA FRANCA CELPA"},
+  "HSEQ-INTEXZONA-2026":   {rol:"hseq", nombre:"HSEQ Zona Franca Intexzona", badge:"🦺 HSEQ", centro:"ZONA FRANCA INTEXZONA"},
+  "HSEQ-PARQCENTRAL-2026": {rol:"hseq", nombre:"HSEQ Zona Franca Parque Central", badge:"🦺 HSEQ", centro:"ZONA FRANCA PARQUE CENTRAL"}
 };
 /* Secciones que puede ver cada rol */
 const PERMISOS={
@@ -1598,6 +1617,16 @@ function aplicarPermisos(){
   /* Identificación del usuario en el encabezado */
   const b=E("admin-badge");
   if(b)b.textContent=sesionAdmin.badge+" · "+sesionAdmin.nombre;
+  document.querySelectorAll(".alcance-hseq").forEach(el=>el.remove());
+  if("hseq"===sesionAdmin.rol&&sesionAdmin.centro){
+    document.querySelectorAll("#ap-acis,#ap-simu,#ap-reportes").forEach(p=>{
+      const d=document.createElement("div");
+      d.className="alcance-hseq";
+      d.style.cssText="background:#eff6ff;border:.5px solid #bfdbfe;border-radius:8px;padding:8px;font-size:11px;color:var(--az);margin-bottom:10px;font-weight:700;";
+      d.innerHTML="📍 Estás viendo únicamente el centro de trabajo <strong>"+sesionAdmin.centro+"</strong>";
+      p.insertBefore(d,p.firstChild);
+    });
+  }
   /* Abrir la primera sección permitida */
   const primera=permitidas[0];
   if(primera)A(primera,document.querySelector(`.sb-item[onclick*="'${primera}'"]`));
@@ -1747,7 +1776,8 @@ async function cargarSimulacroReal(){
       yaContado[clave]=!0;
       hechoPorCentro[c]=(hechoPorCentro[c]||0)+1;
     });
-    const centros=Object.keys(totalPorCentro).sort((a,b)=>totalPorCentro[b]-totalPorCentro[a]);
+    const soloC=(sesionAdmin&&"hseq"===sesionAdmin.rol&&sesionAdmin.centro)?sesionAdmin.centro:null;
+    const centros=Object.keys(totalPorCentro).filter(c=>!soloC||c===soloC).sort((a,b)=>totalPorCentro[b]-totalPorCentro[a]);
     if(!centros.length){E("simu-sedes").innerHTML='<div class="notif na2"><div class="ni">📭</div><div class="nb"><div class="nt">Aún no hay participantes registrados por centro de trabajo</div></div></div>';return;}
     E("simu-sedes").innerHTML=centros.map(c=>{
       const p=hechoPorCentro[c]||0,t=totalPorCentro[c],pct=t?Math.round(p/t*100):0,
@@ -1757,8 +1787,10 @@ async function cargarSimulacroReal(){
   }catch(err){console.warn("No se pudo cargar el simulacro real",err);E("simu-sedes").innerHTML='<div class="notif na2"><div class="ni">⚠️</div><div class="nb"><div class="nt">No se pudo cargar la información</div></div></div>';}
   if(E("simu-registros")){
     try{
-      const rSnap=await dbFS.collection("simulacro_registros").orderBy("timestamp","desc").limit(15).get();
-      E("simu-registros").innerHTML=rSnap.docs.length?rSnap.docs.map(d=>{
+      const rSnap=await dbFS.collection("simulacro_registros").orderBy("timestamp","desc").limit(60).get();
+      const sc=(sesionAdmin&&"hseq"===sesionAdmin.rol&&sesionAdmin.centro)?sesionAdmin.centro:null;
+      const docsF=rSnap.docs.filter(d=>!sc||(d.data().centro||"")===sc).slice(0,15);
+      E("simu-registros").innerHTML=docsF.length?docsF.map(d=>{
         const r=d.data(),fecha=new Date(r.timestamp).toLocaleDateString("es-CO",{day:"2-digit",month:"2-digit"});
         const fotos=(r.fotos||[]).map(f=>`<img src="${f}" onclick="window.open(this.src)" style="width:52px;height:52px;object-fit:cover;border-radius:6px;border:1px solid var(--b);cursor:pointer;">`).join("");
         return `<div style="padding:8px 0;border-bottom:.5px solid var(--b);"><div style="font-size:11px;font-weight:700;">${r.participanteNombre||"—"} · ${r.centro||"—"}</div><div style="font-size:10px;color:var(--txt2);margin:2px 0;">${r.escenario||"—"} · ${fecha}${r.observaciones?" · \""+r.observaciones+"\"":""}</div>${fotos?`<div style="display:flex;gap:5px;margin-top:4px;">${fotos}</div>`:""}</div>`;
