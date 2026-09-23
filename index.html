@@ -50,7 +50,7 @@
   <button class="ntab" onclick="N('registro',this)">📝 Registro</button>
   <button class="ntab" onclick="N('apertura',this)">❤️ Apertura</button>
   <button class="ntab" onclick="N('simulacro',this)">🚨 Simulacro</button>
-  <button class="ntab" onclick="N('s1',this)">📅 S.1</button>
+  <button class="ntab" onclick="N('presencial',this)">🎪 Presencial</button><button class="ntab" onclick="N('s1',this)">📅 S.1</button>
   <button class="ntab" onclick="N('s2',this)">📅 S.2</button>
   <button class="ntab" onclick="N('s3',this)">📅 S.3</button>
   <button class="ntab" onclick="N('s4',this)">📅 S.4</button>
@@ -649,6 +649,42 @@
   </div>
 </div>
 
+<!-- ACTIVIDADES PRESENCIALES -->
+<div id="scr-presencial" class="scr">
+  <div class="hdr"><div class="ht">🎪 <span>Actividades Presenciales</span></div><div class="hs">Movilidad · Personaje Lúdico</div><div class="tito-wrap"><svg width="72" height="82"><use href="#tito-svg"/></svg></div></div>
+
+  <!-- MOVILIDAD -->
+  <div class="card" style="margin-bottom:10px;">
+    <div class="st">🚦 Actividad de Movilidad <span class="xp-tag">60 XP</span></div>
+    <div style="background:#eff6ff;border:.5px solid #bfdbfe;border-radius:8px;padding:9px;font-size:10px;color:var(--az);margin-bottom:10px;line-height:1.5;">
+      📌 <strong>Cómo funciona:</strong> participa en la actividad con <strong>gafas de realidad virtual</strong> o en el <strong>simulador vial</strong>, según tu centro. Al terminar, quien dirige la actividad te comparte el código QR. Escanéalo o escribe el código aquí para sumar tus 60 XP.
+    </div>
+    <div class="fg">
+      <label class="fl">Código de la actividad</label>
+      <input class="fi" id="mov-input" placeholder="MOV-XXXX" style="text-align:center;font-weight:800;letter-spacing:1px;" autocomplete="off">
+    </div>
+    <button class="btn bp bw" onclick="canjearMovilidad()">🚦 Registrar mi participación</button>
+    <div id="mov-resultado" style="margin-top:8px;"></div>
+  </div>
+
+  <!-- PERSONAJE LÚDICO -->
+  <div class="card">
+    <div class="st">🤹 Personaje Lúdico <span class="xp-tag">40 XP</span></div>
+    <div style="background:#f5f3ff;border:.5px solid #ddd6fe;border-radius:8px;padding:9px;font-size:10px;color:var(--xp);margin-bottom:10px;line-height:1.5;">
+      📌 <strong>Cómo funciona:</strong> cuando el personaje lúdico visite tu operación, tómate una foto con él o de la actividad y súbela aquí. La foto es obligatoria y suma <strong>40 XP</strong> una sola vez.
+    </div>
+    <div class="fg">
+      <label class="fl">Fotografía de la actividad <span style="color:var(--ro);">(obligatoria)</span></label>
+      <input type="file" id="plud-foto-input" accept="image/*" multiple style="display:none;" onchange="agregarFotoGen(this.files,'plud')">
+      <button type="button" class="btn bo bw" onclick="document.getElementById('plud-foto-input').click()">📷 Adjuntar foto</button>
+      <div id="plud-fotos-grid" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;"></div>
+    </div>
+    <div class="fg"><label class="fl">Cuéntanos algo de la actividad (opcional)</label><textarea class="fi" id="plud-desc" rows="2" placeholder="Ej: nos explicó la importancia del uso del cinturón..."></textarea></div>
+    <button class="btn bxp bw" onclick="enviarPersonajeLudico()">🤹 Enviar y sumar 40 XP</button>
+    <div id="plud-resultado" style="margin-top:8px;"></div>
+  </div>
+</div>
+
 <!-- SORPRESAS -->
 <div id="scr-sorpresas" class="scr">
   <div class="hdr"><div class="ht">⚡ <span>Actividades Sorpresa</span></div><div class="hs">Código Dorado · Tarjeta Gracias por Cuidarme</div><div class="tito-wrap"><svg width="72" height="82"><use href="#tito-svg"/></svg></div></div>
@@ -879,6 +915,7 @@
       <div class="sb-item" onclick="A('xp-cfg',this)"><span class="sb-ico">⭐</span>Configurar XP</div>
       <div class="sb-item" onclick="A('qr',this)"><span class="sb-ico">📱</span>Códigos QR</div>
       <div class="sb-sec">Seguridad</div>
+      <div class="sb-item" onclick="A('presencial',this)"><span class="sb-ico">🎪</span>Act. Presenciales</div>
       <div class="sb-item" onclick="A('acis',this)"><span class="sb-ico">⚠️</span>Validar ACIS <span class="bdg bgr" style="margin-left:auto;font-size:8px;">5</span></div>
       <div class="sb-item" onclick="A('simu',this)"><span class="sb-ico">🚨</span>Simulacro</div>
       <div class="sb-sec">Comunicación</div>
@@ -1012,6 +1049,32 @@
       </div>
 
       <!-- ACIS -->
+      <div id="ap-presencial" class="ap">
+        <div style="font-size:13px;font-weight:800;color:var(--az);margin-bottom:10px;">🎪 Actividades Presenciales</div>
+        <div class="card" style="margin-bottom:10px;">
+          <div class="st">🚦 Generar código de Movilidad</div>
+          <div style="background:#eff6ff;border:.5px solid #bfdbfe;border-radius:8px;padding:8px;font-size:10px;color:var(--az);margin-bottom:10px;line-height:1.5;">
+            📌 Genera un código por jornada. Quien dirige la actividad lo comparte <strong>solo a quienes ya participaron</strong>. Al terminar, ciérralo para que nadie más lo use.
+          </div>
+          <div class="fg"><label class="fl">Modalidad</label><select class="fs" id="mov-modalidad">
+            <option value="Gafas de realidad virtual">Gafas de realidad virtual</option>
+            <option value="Simulador vial">Simulador vial</option>
+          </select></div>
+          <div class="fg"><label class="fl">Centro de trabajo</label><select class="fs" id="mov-centro"></select></div>
+          <button class="btn bp bw" onclick="generarCodigoMovilidad()">🚦 Generar código y QR</button>
+          <div id="mov-qr-resultado" style="margin-top:10px;"></div>
+        </div>
+        <div class="card" style="margin-bottom:10px;">
+          <div class="st">📋 Códigos de movilidad generados</div>
+          <table class="tbl"><thead><tr><th>Código</th><th>Modalidad</th><th>Centro</th><th>Usos</th><th>Estado</th></tr></thead><tbody id="mov-tbody"></tbody></table>
+        </div>
+        <div class="card">
+          <div class="st">🤹 Fotos del Personaje Lúdico</div>
+          <div style="font-size:10px;color:var(--txt2);margin-bottom:8px;">Registros enviados por el personal. Revisa que correspondan a la actividad real.</div>
+          <div id="plud-list"></div>
+        </div>
+      </div>
+
       <div id="ap-acis" class="ap">
         <div style="font-size:13px;font-weight:800;color:var(--az);margin-bottom:10px;">⚠️ Validación de ACIS</div>
         <div class="g4" style="margin-bottom:10px;">
@@ -1365,7 +1428,7 @@
 
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-<script>const E=e=>document.getElementById(e),SC=["inicio","registro","apertura","simulacro","s1","s2","s3","s4","juegos","sorpresas","ranking-pub","insignias","dashboard","admin"];function N(e,a){SC.forEach(e=>{const a=E("scr-"+e);a&&a.classList.remove("on")}),document.querySelectorAll(".ntab").forEach(e=>e.classList.remove("on"));const r=E("scr-"+e);if(r&&r.classList.add("on"),a)a.classList.add("on");else{const a=document.querySelector(`.ntab[onclick*="'${e}'"]`);a&&a.classList.add("on")}"ranking-pub"===e&&cargarRankingPublico(),"insignias"===e&&cargarInsigniasReales(),"admin"===e&&chequearAccesoAdmin(),"dashboard"===e&&cargarDashboardPublico()}async function cargarDashboardPublico(){
+<script>const E=e=>document.getElementById(e),SC=["inicio","registro","apertura","simulacro","presencial","s1","s2","s3","s4","juegos","sorpresas","ranking-pub","insignias","dashboard","admin"];function N(e,a){SC.forEach(e=>{const a=E("scr-"+e);a&&a.classList.remove("on")}),document.querySelectorAll(".ntab").forEach(e=>e.classList.remove("on"));const r=E("scr-"+e);if(r&&r.classList.add("on"),a)a.classList.add("on");else{const a=document.querySelector(`.ntab[onclick*="'${e}'"]`);a&&a.classList.add("on")}"ranking-pub"===e&&cargarRankingPublico(),"insignias"===e&&cargarInsigniasReales(),"admin"===e&&chequearAccesoAdmin(),"dashboard"===e&&cargarDashboardPublico()}async function cargarDashboardPublico(){
   if(!dbFS)return;
   try{
     const [pSnap,aSnap]=await Promise.all([
@@ -1578,8 +1641,8 @@ const CLAVES={
 };
 /* Secciones que puede ver cada rol */
 const PERMISOS={
-  general:["overview","usuarios","empresas","actividades","juegos-a","xp-cfg","qr","acis","simu","notif","reportes","config","arq"],
-  hseq:["acis","simu","reportes"]
+  general:["overview","usuarios","empresas","actividades","juegos-a","xp-cfg","qr","presencial","acis","simu","notif","reportes","config","arq"],
+  hseq:["presencial","acis","simu","reportes"]
 };
 let sesionAdmin=null;
 
@@ -1656,7 +1719,7 @@ function chequearAccesoAdmin(){
     if(E("admin-content"))E("admin-content").style.display="none";
   }
 }
-function A(e,a){if(!sesionAdmin||!puede(e)){return;}document.querySelectorAll(".ap").forEach(e=>e.classList.remove("on")),document.querySelectorAll(".sb-item").forEach(e=>e.classList.remove("on"));const r=E("ap-"+e);if(r&&r.classList.add("on"),a)a.classList.add("on");else{const a=document.querySelector(`.sb-item[onclick*="'${e}'"]`);a&&a.classList.add("on")}"reportes"!==e||repInit||(repInit=!0,rP("exportar")),"notif"===e&&cargarNotifHistorial(),"qr"===e&&cargarCodigosDorados(),"usuarios"===e&&renderU(),"empresas"===e&&renderEmps(),"actividades"===e&&renderActs(),"xp-cfg"===e&&renderXPActs(),"acis"===e&&cargarAcisReales(),"simu"===e&&cargarSimulacroReal(),"notif"===e&&renderNotif()}function R(e,a){document.querySelectorAll(".rpane").forEach(e=>e.classList.remove("on")),document.querySelectorAll(".rtab").forEach(e=>e.classList.remove("on"));const r=E("rp-"+e);r&&(r.classList.add("on"),rP(e)),a&&a.classList.add("on")}let HORAS=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],DIAS30=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],EMPS_D=[{"n": "ANAVA LOGISTICS", "reg": 0, "act": 0, "pct": 0, "xp": 0, "acis": 0, "centros": ["ADAMA", "BODEGA CARVAJAL", "BODEGA NACIONAL BUN", "C.L PARQUIAMERICA", "CD FUNZA", "COLTABACO CALI", "DIABONOS", "KOLCEM", "MALTERIA", "MELI BARRANQUILLA", "MELI CARTAGENA", "PUERTO ARGOS", "YARA BPI CARTAGENA", "YARA PPP CARTAGENA", "ZFDP MULTICLIENTE", "ZONA FRANCA CELPA", "ZONA FRANCA PARQUE CENTRAL"]}, {"n": "ANAVA TRANSPORT", "reg": 0, "act": 0, "pct": 0, "xp": 0, "acis": 0, "centros": ["ADAMA", "BODEGA CARVAJAL", "C.L PARQUIAMERICA", "COLTABACO BOGOTÁ", "COLTABACO CALI", "COLTABACO MEDELLIN", "OFICINA BARRANQUILLA", "OFICINA BOGOTA", "OFICINA BUENAVENTURA", "OFICINA CALI", "ZFDP MIDEA", "ZONA FRANCA CELPA", "ZONA FRANCA PARQUE CENTRAL"]}, {"n": "ANAVA FZ SERVICES", "reg": 0, "act": 0, "pct": 0, "xp": 0, "acis": 0, "centros": ["ZFDP FURUKAWA", "ZFDP MIDEA", "ZFDP MULTICLIENTE", "ZFDP PGI", "ZONA FRANCA CELPA", "ZONA FRANCA INTEXZONA", "ZONA FRANCA PARQUE CENTRAL"]}, {"n": "ANAVA INTERNATIONAL", "reg": 0, "act": 0, "pct": 0, "xp": 0, "acis": 0, "centros": ["ZONA FRANCA PARQUE CENTRAL"]}, {"n": "ANAVA HOLDINGS", "reg": 0, "act": 0, "pct": 0, "xp": 0, "acis": 0, "centros": ["ZFDP MULTICLIENTE", "ZONA FRANCA PARQUE CENTRAL"]}, {"n": "3K COMMODITIES", "reg": 0, "act": 0, "pct": 0, "xp": 0, "acis": 0, "centros": ["ZONA FRANCA PARQUE CENTRAL"]}, {"n": "LOGREN", "reg": 0, "act": 0, "pct": 0, "xp": 0, "acis": 0, "centros": ["ZFDP MIDEA"]}],TOP5CT=[],SEM=[{"s":"Semana 1","p":0,"xp":0},{"s":"Semana 2","p":0,"xp":0},{"s":"Semana 3","p":0,"xp":0},{"s":"Semana 4","p":0,"xp":0}],ACT_R=[],JUE_R=[],NIVELES=["🌱 Participante","🌱 Explorador","🛡️ Guardián","🦺 Protector","🏆 Campeón SSTA","⭐ Héroe ANAVA"],NIV_XP=[0,50,150,300,550,850],NAMES=[],USR=[];let uPage=0,uFilt=USR;const PG=10;function filtU(){const e=(E("u-search")||{}).value?.toLowerCase()||"",a=(E("u-emp")||{}).value||"",r=(E("u-est")||{}).value||"";uFilt=USR.filter(o=>(!e||o.n.toLowerCase().includes(e)||(o.g||"").toLowerCase().includes(e))&&(!a||o.e===a)&&(!r||o.est===r)),uPage=0,renderU()}function renderU(){if(!E("u-tbody"))return;const e=uFilt.slice(uPage*PG,(uPage+1)*PG);E("u-tbody").innerHTML=e.map((e,a)=>`<tr><td style="color:var(--txt2);">${uPage*PG+a+1}</td><td style="font-weight:700;">${e.n}</td><td style="font-size:10px;color:var(--txt2);">${e.g||"—"}</td><td style="font-size:10px;">${e.e.split(" ").pop()}</td><td style="font-size:10px;">${e.ct}</td><td><span style="color:var(--xp);font-weight:800;">${e.xp}</span></td><td style="font-size:10px;">${e.niv}</td><td><span class="bdg ${"Activo"===e.est?"bgv":"bgn"}">${e.est}</span></td></tr>`).join("");const a=Math.ceil(uFilt.length/PG);E("u-pager").innerHTML=`<span>${uFilt.length} usuarios</span><div style="display:flex;gap:4px;">${uPage>0?'<button class="btn bo bsm" onclick="uPage--;renderU()">◀</button>':""}<span style="padding:4px 8px;font-weight:700;">${uPage+1}/${a}</span>${uPage<a-1?'<button class="btn bo bsm" onclick="uPage++;renderU()">▶</button>':""}</div>`}function renderEmps(){E("emp-list")&&(E("emp-list").innerHTML=EMPS_D.map((e,a)=>`<div class="card" style="margin-bottom:6px;"><div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'"><div><span style="font-weight:800;color:var(--az);">🏢 ${e.n}</span><span class="bdg bga" style="margin-left:8px;">${e.reg} usuarios</span></div><span style="color:var(--ve);font-weight:800;">${e.pct}% ▾</span></div><div style="display:none;margin-top:8px;"><div style="font-size:10px;color:var(--txt2);margin-bottom:4px;">Centros de trabajo:</div>${e.centros.map(e=>`<span style="display:inline-block;background:var(--bg2);border-radius:6px;padding:2px 8px;font-size:10px;margin:2px;border:.5px solid var(--b);">📍 ${e}</span>`).join("")}</div></div>`).join(""))}const ACTS_D=[{n:"❤️ Apertura - Mi Compromiso",sem:"Todo el mes",xp:30,on:!0},{n:"🚨 Simulacro Nacional",sem:"Semana 2",xp:100,on:!0},{n:"🔍 Detector de Riesgos (ACIS validado)",sem:"Todo el mes",xp:3,on:!0},{n:"🦺 Mi EPP en Regla",sem:"Semana 1",xp:25,on:!0},{n:"🎡 Ruleta Digital SSTA",sem:"Semana 1",xp:10,on:!0},{n:"🔎 El Error Oculto",sem:"Semana 2",xp:10,on:!0},{n:"🦺 Reto del EPP",sem:"Semana 2",xp:12,on:!0},{n:"🔢 Ordena la Secuencia",sem:"Semana 2",xp:10,on:!0},{n:"🤔 ¿Qué harías tú?",sem:"Semana 3",xp:12,on:!0},{n:"👨‍👩‍👧 Mi Familia Me Espera",sem:"Semana 3",xp:40,on:!0},{n:"💚 Ruta Saludable",sem:"Semana 3",xp:10,on:!0},{n:"🧩 Mito o Realidad",sem:"Semana 4",xp:12,on:!0},{n:"♻️ Clasifica el Residuo",sem:"Semana 4",xp:12,on:!0},{n:"🌟 Compromiso SSTA Final",sem:"Semana 4",xp:50,on:!0},{n:"💛 Tarjeta Gracias por Cuidarme",sem:"Todo el mes",xp:10,on:!0},{n:"⚡ Código Dorado",sem:"3 por semana · 12 total",xp:5,on:!0}];function renderActs(){E("acts-list")&&(E("acts-list").innerHTML=ACTS_D.map((e,a)=>`<div style="display:flex;align-items:center;gap:8px;padding:8px;border-bottom:.5px solid var(--b);font-size:11px;"><label class="tog"><input type="checkbox" ${e.on?"checked":""}><span class="sl"></span></label><div style="flex:1;"><span style="font-weight:700;">${e.n}</span><span style="color:var(--txt2);margin-left:6px;font-size:10px;">${e.sem}</span></div><span class="xp-tag">${e.xp} XP</span></div>`).join(""))}const XP_ACTS=[{n:"Apertura",xp:30},{n:"Simulacro",xp:100},{n:"ACIS validado por HSEQ",xp:3},{n:"Mi EPP en Regla",xp:25},{n:"Ruleta (Semana 1)",xp:10},{n:"El Error Oculto",xp:10},{n:"Reto del EPP",xp:12},{n:"Ordena la Secuencia",xp:10},{n:"¿Qué harías tú?",xp:12},{n:"Mi Familia Me Espera",xp:40},{n:"Ruta Saludable",xp:10},{n:"Mito o Realidad",xp:12},{n:"Clasifica el Residuo",xp:12},{n:"Compromiso Final",xp:50},{n:"Tarjeta Gracias",xp:10},{n:"Código Dorado",xp:5},{n:"Trivias",xp:8},{n:"Verdadero o Falso",xp:12},{n:"Sí o No",xp:15},{n:"Sopa de letras",xp:10},{n:"Ruleta (Juegos)",xp:10},{n:"Memorama",xp:10},{n:"Mini Casos (por caso)",xp:8},{n:"Identificar Peligros",xp:12},{n:"Crucigramas",xp:10}];function renderXPActs(){E("xp-acts-list")&&(E("xp-acts-list").innerHTML=XP_ACTS.map(e=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:.5px solid var(--b);font-size:11px;"><span>${e.n}</span><div style="display:flex;align-items:center;gap:6px;"><input type="number" value="${e.xp}" class="fi" style="width:60px;padding:4px 6px;text-align:center;"><span style="font-size:10px;color:var(--txt2);">XP</span></div></div>`).join("")+'<div style="margin-top:8px;"><button class="btn bpa bsm" onclick="alert(\'✅ XP guardado correctamente\')">💾 Guardar XP</button></div>')}let ACIS_REALES=[];
+function A(e,a){if(!sesionAdmin||!puede(e)){return;}document.querySelectorAll(".ap").forEach(e=>e.classList.remove("on")),document.querySelectorAll(".sb-item").forEach(e=>e.classList.remove("on"));const r=E("ap-"+e);if(r&&r.classList.add("on"),a)a.classList.add("on");else{const a=document.querySelector(`.sb-item[onclick*="'${e}'"]`);a&&a.classList.add("on")}"reportes"!==e||repInit||(repInit=!0,rP("exportar")),"notif"===e&&cargarNotifHistorial(),"qr"===e&&cargarCodigosDorados(),"usuarios"===e&&renderU(),"empresas"===e&&renderEmps(),"actividades"===e&&renderActs(),"xp-cfg"===e&&renderXPActs(),"presencial"===e&&(poblarCentrosMov(),cargarCodigosMovilidad(),cargarPersonajeLudico()),"acis"===e&&cargarAcisReales(),"simu"===e&&cargarSimulacroReal(),"notif"===e&&renderNotif()}function R(e,a){document.querySelectorAll(".rpane").forEach(e=>e.classList.remove("on")),document.querySelectorAll(".rtab").forEach(e=>e.classList.remove("on"));const r=E("rp-"+e);r&&(r.classList.add("on"),rP(e)),a&&a.classList.add("on")}let HORAS=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],DIAS30=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],EMPS_D=[{"n": "ANAVA LOGISTICS", "reg": 0, "act": 0, "pct": 0, "xp": 0, "acis": 0, "centros": ["ADAMA", "BODEGA CARVAJAL", "BODEGA NACIONAL BUN", "C.L PARQUIAMERICA", "CD FUNZA", "COLTABACO CALI", "DIABONOS", "KOLCEM", "MALTERIA", "MELI BARRANQUILLA", "MELI CARTAGENA", "PUERTO ARGOS", "YARA BPI CARTAGENA", "YARA PPP CARTAGENA", "ZFDP MULTICLIENTE", "ZONA FRANCA CELPA", "ZONA FRANCA PARQUE CENTRAL"]}, {"n": "ANAVA TRANSPORT", "reg": 0, "act": 0, "pct": 0, "xp": 0, "acis": 0, "centros": ["ADAMA", "BODEGA CARVAJAL", "C.L PARQUIAMERICA", "COLTABACO BOGOTÁ", "COLTABACO CALI", "COLTABACO MEDELLIN", "OFICINA BARRANQUILLA", "OFICINA BOGOTA", "OFICINA BUENAVENTURA", "OFICINA CALI", "ZFDP MIDEA", "ZONA FRANCA CELPA", "ZONA FRANCA PARQUE CENTRAL"]}, {"n": "ANAVA FZ SERVICES", "reg": 0, "act": 0, "pct": 0, "xp": 0, "acis": 0, "centros": ["ZFDP FURUKAWA", "ZFDP MIDEA", "ZFDP MULTICLIENTE", "ZFDP PGI", "ZONA FRANCA CELPA", "ZONA FRANCA INTEXZONA", "ZONA FRANCA PARQUE CENTRAL"]}, {"n": "ANAVA INTERNATIONAL", "reg": 0, "act": 0, "pct": 0, "xp": 0, "acis": 0, "centros": ["ZONA FRANCA PARQUE CENTRAL"]}, {"n": "ANAVA HOLDINGS", "reg": 0, "act": 0, "pct": 0, "xp": 0, "acis": 0, "centros": ["ZFDP MULTICLIENTE", "ZONA FRANCA PARQUE CENTRAL"]}, {"n": "3K COMMODITIES", "reg": 0, "act": 0, "pct": 0, "xp": 0, "acis": 0, "centros": ["ZONA FRANCA PARQUE CENTRAL"]}, {"n": "LOGREN", "reg": 0, "act": 0, "pct": 0, "xp": 0, "acis": 0, "centros": ["ZFDP MIDEA"]}],TOP5CT=[],SEM=[{"s":"Semana 1","p":0,"xp":0},{"s":"Semana 2","p":0,"xp":0},{"s":"Semana 3","p":0,"xp":0},{"s":"Semana 4","p":0,"xp":0}],ACT_R=[],JUE_R=[],NIVELES=["🌱 Participante","🌱 Explorador","🛡️ Guardián","🦺 Protector","🏆 Campeón SSTA","⭐ Héroe ANAVA"],NIV_XP=[0,50,150,300,550,850],NAMES=[],USR=[];let uPage=0,uFilt=USR;const PG=10;function filtU(){const e=(E("u-search")||{}).value?.toLowerCase()||"",a=(E("u-emp")||{}).value||"",r=(E("u-est")||{}).value||"";uFilt=USR.filter(o=>(!e||o.n.toLowerCase().includes(e)||(o.g||"").toLowerCase().includes(e))&&(!a||o.e===a)&&(!r||o.est===r)),uPage=0,renderU()}function renderU(){if(!E("u-tbody"))return;const e=uFilt.slice(uPage*PG,(uPage+1)*PG);E("u-tbody").innerHTML=e.map((e,a)=>`<tr><td style="color:var(--txt2);">${uPage*PG+a+1}</td><td style="font-weight:700;">${e.n}</td><td style="font-size:10px;color:var(--txt2);">${e.g||"—"}</td><td style="font-size:10px;">${e.e.split(" ").pop()}</td><td style="font-size:10px;">${e.ct}</td><td><span style="color:var(--xp);font-weight:800;">${e.xp}</span></td><td style="font-size:10px;">${e.niv}</td><td><span class="bdg ${"Activo"===e.est?"bgv":"bgn"}">${e.est}</span></td></tr>`).join("");const a=Math.ceil(uFilt.length/PG);E("u-pager").innerHTML=`<span>${uFilt.length} usuarios</span><div style="display:flex;gap:4px;">${uPage>0?'<button class="btn bo bsm" onclick="uPage--;renderU()">◀</button>':""}<span style="padding:4px 8px;font-weight:700;">${uPage+1}/${a}</span>${uPage<a-1?'<button class="btn bo bsm" onclick="uPage++;renderU()">▶</button>':""}</div>`}function renderEmps(){E("emp-list")&&(E("emp-list").innerHTML=EMPS_D.map((e,a)=>`<div class="card" style="margin-bottom:6px;"><div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'"><div><span style="font-weight:800;color:var(--az);">🏢 ${e.n}</span><span class="bdg bga" style="margin-left:8px;">${e.reg} usuarios</span></div><span style="color:var(--ve);font-weight:800;">${e.pct}% ▾</span></div><div style="display:none;margin-top:8px;"><div style="font-size:10px;color:var(--txt2);margin-bottom:4px;">Centros de trabajo:</div>${e.centros.map(e=>`<span style="display:inline-block;background:var(--bg2);border-radius:6px;padding:2px 8px;font-size:10px;margin:2px;border:.5px solid var(--b);">📍 ${e}</span>`).join("")}</div></div>`).join(""))}const ACTS_D=[{n:"❤️ Apertura - Mi Compromiso",sem:"Todo el mes",xp:30,on:!0},{n:"🚨 Simulacro Nacional",sem:"Semana 2",xp:100,on:!0},{n:"🚦 Movilidad (VR / simulador vial)",sem:"Presencial",xp:60,on:!0},{n:"🤹 Personaje Lúdico",sem:"Presencial",xp:40,on:!0},{n:"🔍 Detector de Riesgos (ACIS validado)",sem:"Todo el mes",xp:3,on:!0},{n:"🦺 Mi EPP en Regla",sem:"Semana 1",xp:25,on:!0},{n:"🎡 Ruleta Digital SSTA",sem:"Semana 1",xp:10,on:!0},{n:"🔎 El Error Oculto",sem:"Semana 2",xp:10,on:!0},{n:"🦺 Reto del EPP",sem:"Semana 2",xp:12,on:!0},{n:"🔢 Ordena la Secuencia",sem:"Semana 2",xp:10,on:!0},{n:"🤔 ¿Qué harías tú?",sem:"Semana 3",xp:12,on:!0},{n:"👨‍👩‍👧 Mi Familia Me Espera",sem:"Semana 3",xp:40,on:!0},{n:"💚 Ruta Saludable",sem:"Semana 3",xp:10,on:!0},{n:"🧩 Mito o Realidad",sem:"Semana 4",xp:12,on:!0},{n:"♻️ Clasifica el Residuo",sem:"Semana 4",xp:12,on:!0},{n:"🌟 Compromiso SSTA Final",sem:"Semana 4",xp:50,on:!0},{n:"💛 Tarjeta Gracias por Cuidarme",sem:"Todo el mes",xp:10,on:!0},{n:"⚡ Código Dorado",sem:"3 por semana · 12 total",xp:5,on:!0}];function renderActs(){E("acts-list")&&(E("acts-list").innerHTML=ACTS_D.map((e,a)=>`<div style="display:flex;align-items:center;gap:8px;padding:8px;border-bottom:.5px solid var(--b);font-size:11px;"><label class="tog"><input type="checkbox" ${e.on?"checked":""}><span class="sl"></span></label><div style="flex:1;"><span style="font-weight:700;">${e.n}</span><span style="color:var(--txt2);margin-left:6px;font-size:10px;">${e.sem}</span></div><span class="xp-tag">${e.xp} XP</span></div>`).join(""))}const XP_ACTS=[{n:"Apertura",xp:30},{n:"Simulacro",xp:100},{n:"Movilidad (presencial)",xp:60},{n:"Personaje Lúdico (presencial)",xp:40},{n:"ACIS validado por HSEQ",xp:3},{n:"Mi EPP en Regla",xp:25},{n:"Ruleta (Semana 1)",xp:10},{n:"El Error Oculto",xp:10},{n:"Reto del EPP",xp:12},{n:"Ordena la Secuencia",xp:10},{n:"¿Qué harías tú?",xp:12},{n:"Mi Familia Me Espera",xp:40},{n:"Ruta Saludable",xp:10},{n:"Mito o Realidad",xp:12},{n:"Clasifica el Residuo",xp:12},{n:"Compromiso Final",xp:50},{n:"Tarjeta Gracias",xp:10},{n:"Código Dorado",xp:5},{n:"Trivias",xp:8},{n:"Verdadero o Falso",xp:12},{n:"Sí o No",xp:15},{n:"Sopa de letras",xp:10},{n:"Ruleta (Juegos)",xp:10},{n:"Memorama",xp:10},{n:"Mini Casos (por caso)",xp:8},{n:"Identificar Peligros",xp:12},{n:"Crucigramas",xp:10}];function renderXPActs(){E("xp-acts-list")&&(E("xp-acts-list").innerHTML=XP_ACTS.map(e=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:.5px solid var(--b);font-size:11px;"><span>${e.n}</span><div style="display:flex;align-items:center;gap:6px;"><input type="number" value="${e.xp}" class="fi" style="width:60px;padding:4px 6px;text-align:center;"><span style="font-size:10px;color:var(--txt2);">XP</span></div></div>`).join("")+'<div style="margin-top:8px;"><button class="btn bpa bsm" onclick="alert(\'✅ XP guardado correctamente\')">💾 Guardar XP</button></div>')}let ACIS_REALES=[];
 async function cargarAcisReales(){
   if(!dbFS)return;
   try{
@@ -1875,6 +1938,16 @@ function guardarXPFirebase(xp,actividad,extra){
 function sumarXP(n,actividad,extra){if(!n)return;if(!participante){const e=E("xp-bar");return void(e&&(e.innerHTML='⚠️ Debes <a href="#" onclick="N(\'registro\',null);return false;" style="color:var(--az);text-decoration:underline;">registrarte</a> para que tu XP quede guardado a tu nombre',e.classList.remove("xp-pulse"),e.offsetWidth,e.classList.add("xp-pulse")))}participante.xp+=n,conteoAct[(actividad||"").split(":")[0].trim()]=((conteoAct[(actividad||"").split(":")[0].trim()]||0)+1),renderXpBar();const a=E("xp-bar");a&&(a.classList.remove("xp-pulse"),a.offsetWidth,a.classList.add("xp-pulse")),guardarXPFirebase(n,actividad,extra)}
 initFirebase();
 (function(){
+  const mv=new URLSearchParams(location.search).get("mov");
+  if(mv){
+    setTimeout(()=>{
+      N("presencial",null);
+      const i=E("mov-input");
+      if(i)i.value=mv.trim().toUpperCase();
+      alert("🚦 Actividad de Movilidad\n\nTu código es: "+mv.trim().toUpperCase()+"\n\nYa lo dejamos escrito — dale clic a \"Registrar mi participación\" para sumar tus 60 XP.");
+    },300);
+    return;
+  }
   const p=new URLSearchParams(location.search).get("dorado");
   if(!p)return;
   setTimeout(()=>{
@@ -2031,7 +2104,108 @@ function enviarEppRegla(){
   const msg=marcados===total?"¡Excelente! Tu EPP está completo y en regla.":"Gracias por revisar tu EPP. Reporta a tu supervisor lo que falte o esté dañado.";
   E("epp-resultado").innerHTML='<div class="notif '+(marcados===total?"nv":"ny")+'"><div class="ni">'+(marcados===total?"✅":"⚠️")+'</div><div class="nb"><div class="nt">'+msg+" · +"+xp+' XP</div><div class="nm">'+marcados+"/"+total+" elementos confirmados</div></div></div>";
   yaCompletado("Mi EPP en Regla")||(marcarCompletado("Mi EPP en Regla"),sumarXP(xp,"Mi EPP en Regla"));
-}let doradoUsados=[];async function generarCodigoDorado(){
+}
+/* ===== ACTIVIDADES PRESENCIALES ===== */
+async function canjearMovilidad(){
+  const inp=E("mov-input"), res=E("mov-resultado");
+  const cod=(inp.value||"").trim().toUpperCase();
+  const av=m=>{res.innerHTML='<div class="notif ny"><div class="ni">⚠️</div><div class="nb"><div class="nt">'+m+'</div></div></div>';};
+  if(!cod)return av("Escribe o escanea el código que te compartió el facilitador.");
+  if(!participante)return av("Debes registrarte primero para sumar XP.");
+  if(yaCompletado("Movilidad"))return av("Ya registraste tu participación en la actividad de Movilidad.");
+  if(!dbFS)return av("Sin conexión a la base de datos. Intenta de nuevo en un momento.");
+  res.innerHTML='<div style="font-size:11px;color:var(--txt2);">Verificando código...</div>';
+  try{
+    const snap=await dbFS.collection("actividades_presenciales").where("codigo","==",cod).limit(1).get();
+    if(snap.empty)return av("Código no válido. Verifica con quien dirigió la actividad.");
+    const doc=snap.docs[0], a=doc.data();
+    if(!a.activo)return av("Este código ya fue cerrado por el facilitador.");
+    await doc.ref.update({usos:(a.usos||0)+1});
+    marcarCompletado("Movilidad");
+    const modal=a.modalidad||"Movilidad";
+    res.innerHTML='<div class="notif nv"><div class="ni">🚦</div><div class="nb"><div class="nt">¡Participación registrada! +60 XP</div><div class="nm">'+modal+(a.centro?" · "+a.centro:"")+'. Gracias por sumarte a la actividad de movilidad.</div></div></div>';
+    inp.value="";
+    sumarXP(60,"Movilidad",{variante:modal});
+  }catch(err){console.warn(err);av("No se pudo verificar el código. Intenta de nuevo.");}
+}
+async function enviarPersonajeLudico(){
+  const res=E("plud-resultado"), fotos=(fotosGen.plud||[]).map(f=>f.dataUrl);
+  const av=(m,d)=>{res.innerHTML='<div class="notif ny"><div class="ni">📷</div><div class="nb"><div class="nt">'+m+'</div>'+(d?'<div class="nm">'+d+'</div>':'')+'</div></div>';};
+  if(!fotos.length)return av("Falta la fotografía","Adjunta al menos una foto con el personaje lúdico o de la actividad.");
+  if(!participante)return av("Debes registrarte primero","Así tu participación queda a tu nombre.");
+  if(yaCompletado("Personaje Lúdico"))return av("Ya registraste esta actividad","El XP del Personaje Lúdico solo suma una vez.");
+  const desc=(E("plud-desc").value||"").trim();
+  if(dbFS&&participante.fid){
+    dbFS.collection("personaje_ludico").add({
+      participanteId:participante.fid, participanteNombre:participante.nombre,
+      empresa:participante.empresa, centro:participante.centro,
+      descripcion:desc, fotos, timestamp:Date.now()
+    }).catch(err=>console.warn(err));
+  }
+  marcarCompletado("Personaje Lúdico");
+  res.innerHTML='<div class="notif nv"><div class="ni">🤹</div><div class="nb"><div class="nt">¡Registrado! +40 XP</div><div class="nm">Gracias por participar. Tu foto quedó registrada para el HSEQ de tu centro.</div></div></div>';
+  E("plud-desc").value=""; fotosGen.plud=[]; renderFotosGen("plud");
+  sumarXP(40,"Personaje Lúdico");
+}
+
+/* ===== ADMIN: ACTIVIDADES PRESENCIALES ===== */
+function poblarCentrosMov(){
+  const s=E("mov-centro"); if(!s)return;
+  const cs=[...new Set(PERSONAL_REGISTRO.map(r=>r.c))].sort();
+  const fijo=(sesionAdmin&&"hseq"===sesionAdmin.rol&&sesionAdmin.centro)?sesionAdmin.centro:null;
+  s.innerHTML=(fijo?[fijo]:cs).map(c=>`<option value="${c}">${c}</option>`).join("");
+  if(fijo){s.disabled=true;s.style.opacity=".7";}
+}
+async function generarCodigoMovilidad(){
+  if(!dbFS)return void alert("Sin conexión a la base de datos.");
+  const modalidad=E("mov-modalidad").value, centro=E("mov-centro").value,
+        codigo="MOV-"+Math.random().toString(36).substr(2,4).toUpperCase();
+  try{
+    await dbFS.collection("actividades_presenciales").add({tipo:"movilidad",codigo,modalidad,centro,xp:60,usos:0,activo:true,creado:Date.now()});
+    const url="https://nataliaricardorincon-hash.github.io/hseq-boost-xp/?mov="+encodeURIComponent(codigo),
+          qrImg="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data="+encodeURIComponent(url);
+    E("mov-qr-resultado").innerHTML=`<div class="notif nv" style="flex-direction:column;align-items:center;text-align:center;padding:14px;">
+      <img src="${qrImg}" style="width:180px;height:180px;border-radius:8px;margin-bottom:8px;" alt="QR Movilidad">
+      <div style="font-family:monospace;font-weight:800;font-size:15px;color:var(--az);">${codigo}</div>
+      <div style="font-size:10px;color:var(--txt2);margin-top:4px;">${modalidad} · ${centro} · 60 XP</div>
+      <div style="font-size:10px;color:var(--txt2);margin-top:6px;">Comparte este QR solo con quienes ya participaron. Ciérralo al terminar la jornada.</div></div>`;
+    cargarCodigosMovilidad();
+  }catch(err){console.warn(err);alert("No se pudo generar el código.");}
+}
+async function cargarCodigosMovilidad(){
+  if(!E("mov-tbody")||!dbFS)return;
+  try{
+    const snap=await dbFS.collection("actividades_presenciales").orderBy("creado","desc").limit(40).get();
+    const fijo=(sesionAdmin&&"hseq"===sesionAdmin.rol&&sesionAdmin.centro)?sesionAdmin.centro:null;
+    const docs=snap.docs.filter(d=>!fijo||d.data().centro===fijo);
+    E("mov-tbody").innerHTML=docs.length?docs.map(d=>{
+      const a=d.data();
+      return `<tr><td style="font-family:monospace;font-size:10px;">${a.codigo}</td><td style="font-size:10px;">${a.modalidad||"—"}</td><td style="font-size:10px;">${a.centro||"—"}</td><td><strong>${a.usos||0}</strong></td>
+      <td>${a.activo?`<button class="btn bro bsm" style="font-size:9px;padding:3px 7px;" onclick="cerrarCodigoMovilidad('${d.id}')">Cerrar</button>`:'<span class="bdg bgn">cerrado</span>'}</td></tr>`;
+    }).join(""):'<tr><td colspan="5" style="text-align:center;color:var(--txt2);font-size:11px;padding:10px;">Aún no se ha generado ningún código</td></tr>';
+  }catch(err){console.warn(err);}
+}
+async function cerrarCodigoMovilidad(id){
+  if(!dbFS||!confirm("¿Cerrar este código? Nadie más podrá usarlo."))return;
+  try{await dbFS.collection("actividades_presenciales").doc(id).update({activo:false});cargarCodigosMovilidad();}catch(err){console.warn(err);}
+}
+async function cargarPersonajeLudico(){
+  if(!E("plud-list")||!dbFS)return;
+  try{
+    const snap=await dbFS.collection("personaje_ludico").orderBy("timestamp","desc").limit(60).get();
+    const fijo=(sesionAdmin&&"hseq"===sesionAdmin.rol&&sesionAdmin.centro)?sesionAdmin.centro:null;
+    const docs=snap.docs.filter(d=>!fijo||(d.data().centro||"")===fijo).slice(0,30);
+    E("plud-list").innerHTML=docs.length?docs.map(d=>{
+      const r=d.data(), f=new Date(r.timestamp).toLocaleDateString("es-CO",{day:"2-digit",month:"2-digit"});
+      const fotos=(r.fotos||[]).map(x=>`<img src="${x}" onclick="window.open(this.src)" style="width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--b);cursor:pointer;">`).join("");
+      return `<div style="padding:8px 0;border-bottom:.5px solid var(--b);">
+        <div style="font-size:11px;font-weight:700;">${r.participanteNombre||"—"} · ${r.centro||"—"}</div>
+        <div style="font-size:10px;color:var(--txt2);margin:2px 0;">${f}${r.descripcion?' · "'+r.descripcion+'"':""}</div>
+        ${fotos?`<div style="display:flex;gap:5px;margin-top:4px;flex-wrap:wrap;">${fotos}</div>`:""}</div>`;
+    }).join(""):'<div class="notif na2"><div class="ni">📭</div><div class="nb"><div class="nt">Aún no hay registros del personaje lúdico</div></div></div>';
+  }catch(err){console.warn(err);}
+}
+let doradoUsados=[];async function generarCodigoDorado(){
   const empresa=E("qr-emp").value,
         xp=parseInt(E("qr-xp").value,10),
         semana=parseInt((E("qr-semana")||{value:"1"}).value,10),
