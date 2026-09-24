@@ -917,7 +917,7 @@
       <div class="sb-item" onclick="A('qr',this)"><span class="sb-ico">📱</span>Códigos QR</div>
       <div class="sb-sec">Seguridad</div>
       <div class="sb-item" onclick="A('presencial',this)"><span class="sb-ico">🎪</span>Act. Presenciales</div>
-      <div class="sb-item" onclick="A('acis',this)"><span class="sb-ico">⚠️</span>Validar ACIS <span class="bdg bgr" style="margin-left:auto;font-size:8px;">5</span></div>
+      <div class="sb-item" onclick="A('acis',this)"><span class="sb-ico">⚠️</span>Validar ACIS <span class="bdg bgr" id="sb-acis-badge" style="margin-left:auto;font-size:8px;display:none;">0</span></div>
       <div class="sb-item" onclick="A('simu',this)"><span class="sb-ico">🚨</span>Simulacro</div>
       <div class="sb-sec">Comunicación</div>
       <div class="sb-item" onclick="A('notif',this)"><span class="sb-ico">🔔</span>Notificaciones</div>
@@ -1670,6 +1670,7 @@ function abrirPanelAdmin(){
   E("admin-content").style.display="block";
   aplicarPermisos();
   cargarDatosAdminReales();
+  cargarAcisReales();
 }
 function aplicarPermisos(){
   if(!sesionAdmin)return;
@@ -1754,6 +1755,13 @@ async function cargarAcisReales(){
     const pPend=total?Math.round(pend/total*100):0,pRes=total?100-pPend:0;
     E("acis-tipo-cond").style.width=pPend+"%";E("acis-tipo-cond").textContent=pend;
     E("acis-tipo-acto").style.width=pRes+"%";E("acis-tipo-acto").textContent=resueltos;
+  }
+  const bg=E("sb-acis-badge");
+  if(bg){
+    const sc=(sesionAdmin&&"hseq"===sesionAdmin.rol&&sesionAdmin.centro)?sesionAdmin.centro:null;
+    const pend=ACIS_REALES.filter(r=>"pendiente"===r.estado&&(!sc||(r.centro||"—")===sc)).length;
+    bg.textContent=pend;
+    bg.style.display=pend?"":"none";
   }
   if(E("acis-f-centro")){
     const sel=E("acis-f-centro"),prev=sel.value,
