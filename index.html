@@ -1721,7 +1721,7 @@ let _tl=0,_tlT=null;
 function revelarAdmin(){
   const t=E("tab-admin");
   if(t){t.style.display="";t.scrollIntoView({behavior:"smooth",inline:"center",block:"nearest"});}
-  try{sessionStorage.setItem("hseq_admin_visible","1");}catch(e){}
+  sesSet("hseq_admin_visible","1");
 }
 function tocarLogo(){
   clearTimeout(_tlT);_tl++;
@@ -1731,7 +1731,7 @@ function tocarLogo(){
 /* El acceso tambien se abre con ?admin=1 en la URL, y se mantiene mientras dure la pestaña del navegador */
 (function(){
   try{
-    if(new URLSearchParams(location.search).get("admin")||sessionStorage.getItem("hseq_admin_visible")==="1"){
+    if(new URLSearchParams(location.search).get("admin")||sesGet("hseq_admin_visible")==="1"){
       document.addEventListener("DOMContentLoaded",revelarAdmin);
       setTimeout(revelarAdmin,400);
     }
@@ -1781,7 +1781,7 @@ function verificarPinAdmin(){
   const p=E("admin-pin").value.trim().toUpperCase(),u=CLAVES[p];
   if(!u){E("admin-pin-error").textContent="⚠️ Clave incorrecta";return;}
   sesionAdmin=u;
-  sessionStorage.setItem("admin_sesion",JSON.stringify(u));
+  sesSet("admin_sesion",JSON.stringify(u));
   E("admin-pin-error").textContent="";
   abrirPanelAdmin();
 }
@@ -1835,7 +1835,7 @@ function aplicarPermisos(){
   }else if(fc){fc.disabled=false;fc.style.opacity="";}
 }
 function cerrarSesionAdmin(){
-  sessionStorage.removeItem("admin_sesion");
+  sesDel("admin_sesion");
   sesionAdmin=null;
   E("admin-content").style.display="none";
   E("admin-gate").style.display="block";
@@ -1843,7 +1843,7 @@ function cerrarSesionAdmin(){
 }
 function puede(seccion){return!!sesionAdmin&&(PERMISOS[sesionAdmin.rol]||[]).includes(seccion);}
 function chequearAccesoAdmin(){
-  const raw=sessionStorage.getItem("admin_sesion");
+  const raw=sesGet("admin_sesion");
   if(raw){try{sesionAdmin=JSON.parse(raw);}catch(e){sesionAdmin=null;}}
   if(sesionAdmin){const t=E("tab-admin");if(t)t.style.display="";abrirPanelAdmin();}
   else{
@@ -2058,7 +2058,7 @@ function avisoTope(act,contenedor){
 function yaCompletado(actividad,variante){return completadasSet.has(variante?actividad+"::"+variante:actividad);}
 function marcarCompletado(actividad,variante){completadasSet.add(variante?actividad+"::"+variante:actividad);}
 function restaurarParticipante(){
-  const pid=localStorage.getItem("hseq_pid");
+  const pid=almGet("hseq_pid");
   if(!pid||!dbFS)return;
   dbFS.collection("participantes").doc(pid).get().then(doc=>{
     if(doc.exists){
@@ -2578,6 +2578,13 @@ async function canjearCodigoDorado(){
   c.innerHTML='<div class="notif ny" style="margin-top:10px;"><div class="ni">📡</div><div class="nb"><div class="nt">Tu XP quedó guardado en este dispositivo, pero no se pudo '+accion+'</div><div class="nm">Detalle técnico: <strong>'+cod+'</strong>. Muéstraselo al administrador de la campaña.</div></div></div>';
   c.style.display="block";
 }
+/* Almacenamiento tolerante a navegadores con cookies/almacenamiento bloqueado */
+const _memStore={};
+function almGet(k){try{const v=localStorage.getItem(k);return v===null?(k in _memStore?_memStore[k]:null):v;}catch(e){return k in _memStore?_memStore[k]:null;}}
+function almSet(k,v){_memStore[k]=v;try{localStorage.setItem(k,v);}catch(e){}}
+function sesGet(k){try{const v=sessionStorage.getItem(k);return v===null?(k in _memStore?_memStore[k]:null):v;}catch(e){return k in _memStore?_memStore[k]:null;}}
+function sesSet(k,v){_memStore[k]=v;try{sessionStorage.setItem(k,v);}catch(e){}}
+function sesDel(k){delete _memStore[k];try{sessionStorage.removeItem(k);}catch(e){}}
 function mostrarExitoRegistro(msg){
   E("reg-msg").textContent=msg;
   E("reg-ok").style.display="flex",E("reg-ok").classList.remove("fade"),E("reg-ok").offsetWidth,E("reg-ok").classList.add("fade");
@@ -2602,7 +2609,7 @@ function registrarInterno(){
     return;
   }
   ["reg-nombre","reg-cc","reg-emp","reg-ct"].forEach(id=>{const el=E(id);if(el)el.style.border="";});
-  const pidExistente=localStorage.getItem("hseq_pid");
+  const pidExistente=almGet("hseq_pid");
   if(participante&&pidExistente){
     participante.nombre=e,participante.empresa=r,participante.centro=o,participante.cargo=g;
     if(dbFS)dbFS.collection("participantes").doc(pidExistente).update({nombre:e,empresa:r,centro:o,cargo:g}).catch(()=>{});
@@ -2622,7 +2629,7 @@ function registrarInterno(){
     if(!snap.empty){
       const doc=snap.docs[0],d=doc.data();
       participante={nombre:d.nombre,empresa:r,centro:o,cargo:g,xp:d.xp||0,fid:doc.id};
-      localStorage.setItem("hseq_pid",doc.id);
+      almSet("hseq_pid",doc.id);
       if(r!==d.empresa||o!==d.centro||g!==(d.cargo||""))dbFS.collection("participantes").doc(doc.id).update({empresa:r,centro:o,cargo:g}).catch(()=>{});
       renderXpBar();
       cargarCompletadas();
@@ -2631,7 +2638,7 @@ function registrarInterno(){
       participante={nombre:e,empresa:r,centro:o,cargo:g,xp:0};
       dbFS.collection("participantes").add({nombre:e,empresa:r,centro:o,cargo:g,xp:0,creado:Date.now()}).then(doc2=>{
         participante.fid=doc2.id;
-        localStorage.setItem("hseq_pid",doc2.id);
+        almSet("hseq_pid",doc2.id);
         sumarXP(10,"Registro (bienvenida)");
       }).catch(err=>{avisoFirestore("guardar tu registro",err);sumarXP(10,"Registro (bienvenida)")});
       mostrarExitoRegistro("🎉 ¡Bienvenido/a, "+e+"! Tu registro fue exitoso. +10 XP de bienvenida desbloqueados.");
