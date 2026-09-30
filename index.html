@@ -1507,11 +1507,20 @@ window.addEventListener("unhandledrejection",function(ev){
       <!-- CONFIGURACIÓN -->
       <div id="ap-config" class="ap">
         <div style="font-size:13px;font-weight:800;color:var(--az);margin-bottom:10px;">🛠️ Configuración del Sistema</div>
+        <div class="card" style="border:2px solid var(--ro);margin-bottom:10px;">
+          <div class="st" style="color:var(--ro);">🧹 Reiniciar XP de la campaña</div>
+          <div style="background:#fef2f2;border:.5px solid #fecaca;border-radius:8px;padding:9px;font-size:10px;color:#991b1b;margin-bottom:10px;line-height:1.5;">
+            ⚠️ <strong>Acción irreversible.</strong> Pone en cero el XP de todos los participantes y borra los eventos de XP registrados <strong>antes del 1 de octubre de 2026</strong>.<br>
+            Úsalo una sola vez, justo antes del arranque, para limpiar las pruebas y la actividad anticipada de septiembre. Los registros de personas <strong>no se borran</strong>: nadie tiene que volver a inscribirse.
+          </div>
+          <div id="reset-estado" style="font-size:11px;margin-bottom:8px;"></div>
+          <button class="btn bro bw" onclick="reiniciarCampana()">🧹 Poner el marcador en cero</button>
+        </div>
         <div class="card">
           <div class="st">📅 Parámetros del mes</div>
           <div class="cfg-row"><div><div class="cfg-lbl">Nombre del mes</div><div class="cfg-sub">Identificador del período activo</div></div><input class="fi" id="cfg-mes-nombre" value="Mes HSEQ BOOST XP ANAVA 2026" style="width:200px;"></div>
-          <div class="cfg-row"><div><div class="cfg-lbl">Fecha inicio</div></div><input type="date" class="fi" id="cfg-mes-inicio" value="2026-06-01" style="width:140px;"></div>
-          <div class="cfg-row"><div><div class="cfg-lbl">Fecha cierre</div></div><input type="date" class="fi" id="cfg-mes-cierre" value="2026-06-30" style="width:140px;"></div>
+          <div class="cfg-row"><div><div class="cfg-lbl">Fecha inicio</div></div><input type="date" class="fi" id="cfg-mes-inicio" value="2026-10-01" style="width:140px;"></div>
+          <div class="cfg-row"><div><div class="cfg-lbl">Fecha cierre</div></div><input type="date" class="fi" id="cfg-mes-cierre" value="2026-10-31" style="width:140px;"></div>
           <div class="cfg-row"><div><div class="cfg-lbl">Registro abierto</div><div class="cfg-sub">Permite nuevos registros</div></div><label class="tog"><input type="checkbox" checked><span class="sl"></span></label></div>
           <div class="cfg-row"><div><div class="cfg-lbl">Mostrar ranking público</div></div><label class="tog"><input type="checkbox" checked><span class="sl"></span></label></div>
           <div style="margin-top:10px;"><button class="btn bpa" onclick="guardarConfigMes()">💾 Guardar cambios y actualizar reportes</button></div>
@@ -1784,6 +1793,44 @@ function verificarPinAdmin(){
   sesSet("admin_sesion",JSON.stringify(u));
   E("admin-pin-error").textContent="";
   abrirPanelAdmin();
+}
+
+/* ===== REINICIO DE CAMPAÑA (solo administrador general) ===== */
+async function reiniciarCampana(){
+  if(!sesionAdmin||"general"!==sesionAdmin.rol)return void alert("Solo el administrador general puede reiniciar la campaña.");
+  if(!dbFS)return void alert("Sin conexión a la base de datos.");
+  if(!confirm("Esto pondrá en CERO el XP de todos los participantes y borrará los eventos de XP anteriores al 1 de octubre de 2026.\n\nLos registros de personas se conservan.\n\n¿Continuar?"))return;
+  if(!confirm("Confirmación final: esta acción NO se puede deshacer.\n\n¿Reiniciar el marcador?"))return;
+  const est=E("reset-estado");
+  const log=t=>{if(est)est.innerHTML=t;};
+  try{
+    log("⏳ Poniendo el XP en cero...");
+    const ps=await dbFS.collection("participantes").get();
+    let n=0;
+    for(let i=0;i<ps.docs.length;i+=400){
+      const lote=dbFS.batch();
+      ps.docs.slice(i,i+400).forEach(d=>{lote.update(d.ref,{xp:0});n++});
+      await lote.commit();
+      log("⏳ XP reiniciado en "+n+" de "+ps.docs.length+" participantes...");
+    }
+    log("⏳ Borrando eventos de XP anteriores al 1 de octubre...");
+    const ev=await dbFS.collection("xp_eventos").where("timestamp","<",MES_INICIO).get();
+    let m=0;
+    for(let i=0;i<ev.docs.length;i+=400){
+      const lote=dbFS.batch();
+      ev.docs.slice(i,i+400).forEach(d=>{lote.delete(d.ref);m++});
+      await lote.commit();
+      log("⏳ Eliminados "+m+" de "+ev.docs.length+" eventos previos...");
+    }
+    completadasSet=new Set();conteoAct={};
+    if(participante)participante.xp=0;
+    renderXpBar();
+    log('<div class="notif nv"><div class="ni">✅</div><div class="nb"><div class="nt">Marcador reiniciado</div><div class="nm">'+n+' participantes en cero · '+m+' eventos previos eliminados. La campaña arranca limpia el 1 de octubre.</div></div></div>');
+    cargarDatosAdminReales();
+  }catch(err){
+    console.error(err);
+    log('<div class="notif ny"><div class="ni">⚠️</div><div class="nb"><div class="nt">No se pudo completar el reinicio</div><div class="nm">Detalle: '+(err&&err.message||err)+'</div></div></div>');
+  }
 }
 function abrirPanelAdmin(){
   E("admin-gate").style.display="none";
@@ -2074,7 +2121,25 @@ function guardarXPFirebase(xp,actividad,extra){
   dbFS.collection("participantes").doc(participante.fid).update({xp:firebase.firestore.FieldValue.increment(xp)}).catch(()=>{});
   dbFS.collection("xp_eventos").add(Object.assign({participanteId:participante.fid,participanteNombre:participante.nombre,empresa:participante.empresa,centro:participante.centro,actividad:actividad||"Actividad",xp:xp,timestamp:Date.now()},extra||{})).catch(()=>{});
 }
-function sumarXP(n,actividad,extra){if(!n)return;if(!participante){const e=E("xp-bar");return void(e&&(e.innerHTML='⚠️ Debes <a href="#" onclick="N(\'registro\',null);return false;" style="color:var(--az);text-decoration:underline;">registrarte</a> para que tu XP quede guardado a tu nombre',e.classList.remove("xp-pulse"),e.offsetWidth,e.classList.add("xp-pulse")))}participante.xp+=n,conteoAct[(actividad||"").split(":")[0].trim()]=((conteoAct[(actividad||"").split(":")[0].trim()]||0)+1),renderXpBar();const a=E("xp-bar");a&&(a.classList.remove("xp-pulse"),a.offsetWidth,a.classList.add("xp-pulse")),guardarXPFirebase(n,actividad,extra)}
+function campanaActiva(){const t=Date.now();return t>=MES_INICIO&&t<=MES_FIN;}
+function avisoFueraDeCampana(){
+  const t=Date.now(), antes=t<MES_INICIO;
+  const b=E("xp-bar");
+  if(b){
+    b.innerHTML=antes
+      ? '🗓️ El Mes HSEQ Boost XP arranca el <strong>1 de octubre</strong> · puedes practicar, pero el XP se contabiliza desde esa fecha'
+      : '🏁 El Mes HSEQ Boost XP terminó el <strong>31 de octubre</strong> · ya no se acumula XP';
+    b.classList.remove("xp-pulse");
+  }
+  const m=document.createElement("div");
+  m.style.cssText="position:fixed;left:12px;right:12px;bottom:14px;z-index:9998;background:var(--az);color:#fff;padding:12px 14px;border-radius:12px;font-size:12px;box-shadow:0 6px 20px rgba(0,0,0,.25);text-align:center;";
+  m.innerHTML=antes
+    ? "🗓️ <strong>Aún no inicia el mes HSEQ</strong><br><span style='font-size:11px;opacity:.9;'>Puedes explorar y practicar libremente. El XP empieza a contar el 1 de octubre de 2026.</span>"
+    : "🏁 <strong>El mes HSEQ ya finalizó</strong><br><span style='font-size:11px;opacity:.9;'>Gracias por participar. El XP se cerró el 31 de octubre de 2026.</span>";
+  document.body.appendChild(m);
+  setTimeout(()=>{m.style.transition="opacity .4s";m.style.opacity="0";setTimeout(()=>m.remove(),450);},4200);
+}
+function sumarXP(n,actividad,extra){if(!n)return;if(!campanaActiva())return void avisoFueraDeCampana();if(!participante){const e=E("xp-bar");return void(e&&(e.innerHTML='⚠️ Debes <a href="#" onclick="N(\'registro\',null);return false;" style="color:var(--az);text-decoration:underline;">registrarte</a> para que tu XP quede guardado a tu nombre',e.classList.remove("xp-pulse"),e.offsetWidth,e.classList.add("xp-pulse")))}participante.xp+=n,conteoAct[(actividad||"").split(":")[0].trim()]=((conteoAct[(actividad||"").split(":")[0].trim()]||0)+1),renderXpBar();const a=E("xp-bar");a&&(a.classList.remove("xp-pulse"),a.offsetWidth,a.classList.add("xp-pulse")),guardarXPFirebase(n,actividad,extra)}
 initFirebase();
 (function(){
   const mv=new URLSearchParams(location.search).get("mov");
@@ -2095,7 +2160,17 @@ initFirebase();
     if(inp)inp.value=p.trim().toUpperCase();
     alert("🎉 ¡Encontraste un Código Dorado!\n\nTu código es: "+p.trim().toUpperCase()+"\n\nYa lo dejamos escrito abajo — solo dale clic a \"Canjear código\" para ganar tu XP.");
   },300);
-})();function renderXpBar(){const e=E("xp-bar");e&&(e.innerHTML=participante?"⭐ "+participante.nombre+' · Tu XP acumulado: <span id="global-xp">'+participante.xp+"</span>":'⚠️ <a href="#" onclick="N(\'registro\',null);return false;" style="color:var(--az);text-decoration:underline;">Regístrate</a> para empezar a acumular tu XP')}async function registrarApertura(){
+})();function renderXpBar(){
+  const e=E("xp-bar");
+  if(!e)return;
+  if(!campanaActiva()){
+    e.innerHTML=Date.now()<MES_INICIO
+      ? '🗓️ El Mes HSEQ Boost XP va del <strong>1 al 31 de octubre</strong> · practica libremente, el XP cuenta desde el 1'
+      : '🏁 El Mes HSEQ Boost XP cerró el <strong>31 de octubre</strong>'+(participante?' · Tu XP final: <strong>'+participante.xp+'</strong>':'');
+    return;
+  }
+  e.innerHTML=participante?"⭐ "+participante.nombre+' · Tu XP acumulado: <span id="global-xp">'+participante.xp+"</span>":'⚠️ <a href="#" onclick="N(\'registro\',null);return false;" style="color:var(--az);text-decoration:underline;">Regístrate</a> para empezar a acumular tu XP';
+}async function registrarApertura(){
   if(!participante){alert("⚠️ Debes registrarte primero en la pestaña Registro.");return;}
   if(dbFS&&participante.fid){
     try{
