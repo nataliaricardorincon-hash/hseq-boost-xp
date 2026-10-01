@@ -1563,6 +1563,15 @@ window.addEventListener("unhandledrejection",function(ev){
           <div id="bienv-estado" style="font-size:11px;margin-bottom:8px;"></div>
           <button class="btn bp bw" onclick="acreditarBienvenida()">🎁 Acreditar a los ya inscritos</button>
         </div>
+        <div class="card" style="border:2px solid var(--na);margin-bottom:10px;">
+          <div class="st" style="color:var(--na);">🗑️ Borrar registros de prueba</div>
+          <div style="background:#fff7ed;border:.5px solid #fed7aa;border-radius:8px;padding:9px;font-size:10px;color:#9a3412;margin-bottom:10px;line-height:1.5;">
+            Elimina los registros creados <strong>antes del 1 de octubre de 2026</strong> en: reportes ACIS, registros de simulacro y fotos del personaje lúdico.<br>
+            No toca el XP ni los participantes. Úsalo para limpiar las pruebas previas al lanzamiento.
+          </div>
+          <div id="limp-estado" style="font-size:11px;margin-bottom:8px;"></div>
+          <button class="btn bro bw" onclick="limpiarRegistrosPrevios()">🗑️ Borrar registros anteriores al 1 de octubre</button>
+        </div>
         <div class="card" style="border:2px solid var(--ro);margin-bottom:10px;">
           <div class="st" style="color:var(--ro);">🧹 Reiniciar XP de la campaña</div>
           <div style="background:#fef2f2;border:.5px solid #fecaca;border-radius:8px;padding:9px;font-size:10px;color:#991b1b;margin-bottom:10px;line-height:1.5;">
@@ -1940,6 +1949,43 @@ async function acreditarBienvenida(){
     if(participante&&participante.fid&&!yaTienen.has(participante.fid)){participante.xp+=XP_BIENVENIDA;renderXpBar();}
     log('<div class="notif nv"><div class="ni">🎁</div><div class="nb"><div class="nt">XP de bienvenida acreditado</div><div class="nm">'+n+' participante(s) recibieron sus '+XP_BIENVENIDA+' XP. Los demás ya los tenían.</div></div></div>');
     cargarDatosAdminReales();
+  }catch(err){
+    console.error(err);
+    log('<div class="notif ny"><div class="ni">⚠️</div><div class="nb"><div class="nt">No se pudo completar</div><div class="nm">Detalle: '+(err&&err.message||err)+'</div></div></div>');
+  }
+}
+
+/* ===== LIMPIAR REGISTROS DE PRUEBA ANTERIORES AL INICIO ===== */
+async function limpiarRegistrosPrevios(){
+  if(!sesionAdmin||"general"!==sesionAdmin.rol)return void alert("Solo el administrador general puede ejecutar esta acción.");
+  if(!dbFS)return void alert("Sin conexión a la base de datos.");
+  const est=E("limp-estado"), log=t=>{if(est)est.innerHTML=t;};
+  const cols=[["acis_reportes","reportes ACIS"],["simulacro_registros","registros de simulacro"],["personaje_ludico","fotos del personaje lúdico"]];
+  try{
+    log("⏳ Buscando registros anteriores al 1 de octubre...");
+    const hallados=[];
+    for(const [col,lbl] of cols){
+      const s=await dbFS.collection(col).where("timestamp","<",MES_INICIO).get();
+      if(s.docs.length)hallados.push({col,lbl,docs:s.docs});
+    }
+    const total=hallados.reduce((a,h)=>a+h.docs.length,0);
+    if(!total){
+      log('<div class="notif nv"><div class="ni">✅</div><div class="nb"><div class="nt">No hay registros de prueba</div><div class="nm">Todas las colecciones están limpias.</div></div></div>');
+      return;
+    }
+    const detalle=hallados.map(h=>h.docs.length+" "+h.lbl).join("\n· ");
+    if(!confirm("Se eliminarán "+total+" registro(s) anteriores al 1 de octubre:\n\n· "+detalle+"\n\nEsta acción no se puede deshacer.\n\n¿Continuar?"))return;
+    let n=0;
+    for(const h of hallados){
+      for(let i=0;i<h.docs.length;i+=400){
+        const lote=dbFS.batch();
+        h.docs.slice(i,i+400).forEach(d=>{lote.delete(d.ref);n++;});
+        await lote.commit();
+        log("⏳ Eliminados "+n+" de "+total+"...");
+      }
+    }
+    log('<div class="notif nv"><div class="ni">🗑️</div><div class="nb"><div class="nt">Registros de prueba eliminados</div><div class="nm">'+n+' registro(s) borrados. La campaña arranca limpia.</div></div></div>');
+    cargarAcisReales();cargarSimulacroReal();cargarPersonajeLudico();
   }catch(err){
     console.error(err);
     log('<div class="notif ny"><div class="ni">⚠️</div><div class="nb"><div class="nt">No se pudo completar</div><div class="nm">Detalle: '+(err&&err.message||err)+'</div></div></div>');
