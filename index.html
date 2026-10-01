@@ -1575,6 +1575,15 @@ window.addEventListener("unhandledrejection",function(ev){
           <button class="btn bp bw" onclick="recalcularXP()">♻️ Recalcular XP de todos</button>
         </div>
         <div class="card" style="border:2px solid var(--na);margin-bottom:10px;">
+          <div class="st" style="color:var(--na);">🚨 Deshacer registros de Simulacro</div>
+          <div style="background:#fff7ed;border:.5px solid #fed7aa;border-radius:8px;padding:9px;font-size:10px;color:#9a3412;margin-bottom:10px;line-height:1.5;">
+            Borra <strong>todos</strong> los registros de simulacro y <strong>descuenta los 100 XP</strong> a quienes los hayan cargado.<br>
+            Úsalo si el simulacro se registró antes de tiempo o con información que no aplica.
+          </div>
+          <div id="simu-undo-estado" style="font-size:11px;margin-bottom:8px;"></div>
+          <button class="btn bro bw" onclick="deshacerSimulacro()">🚨 Borrar registros y XP del Simulacro</button>
+        </div>
+        <div class="card" style="border:2px solid var(--na);margin-bottom:10px;">
           <div class="st" style="color:var(--na);">🗑️ Borrar registros de prueba</div>
           <div style="background:#fff7ed;border:.5px solid #fed7aa;border-radius:8px;padding:9px;font-size:10px;color:#9a3412;margin-bottom:10px;line-height:1.5;">
             Elimina los registros creados <strong>antes del 1 de octubre de 2026</strong> en: reportes ACIS, registros de simulacro y fotos del personaje lúdico.<br>
@@ -1640,7 +1649,43 @@ function semanaDisponible(s){
   const r=rangoSemana(s);
   return Date.now()>=r.ini;   // la semana abre en su fecha y ya no se cierra
 }
+function aplicarBloqueoSimulacro(){
+  const scr=E("scr-simulacro");
+  if(!scr)return;
+  const r=rangoSemana(2), abierto=Date.now()>=r.ini;
+  const tab=document.querySelector('.ntab[onclick*="\'simulacro\'"]');
+  if(tab){
+    const base=tab.textContent.replace(/^🔒\s*/,"");
+    tab.textContent=abierto?base:"🔒 "+base;
+    tab.style.opacity=abierto?"":".55";
+  }
+  let bloq=E("bloq-simu");
+  if(!abierto){
+    if(!bloq){
+      bloq=document.createElement("div");
+      bloq.id="bloq-simu";
+      bloq.className="card";
+      bloq.style.cssText="border:2px solid var(--na);text-align:center;padding:22px 16px;";
+      bloq.innerHTML='<div style="font-size:42px;margin-bottom:6px;">🔒</div>'
+        +'<div style="font-size:15px;font-weight:800;color:var(--az);margin-bottom:6px;">El Simulacro Nacional aún no inicia</div>'
+        +'<div style="font-size:12px;color:var(--txt2);line-height:1.6;">Se habilita el <strong>8 de octubre</strong>, en la Semana 2.<br>Registra tu participación solo después de haber hecho el simulacro en tu centro.</div>';
+    }
+    const hdr=scr.querySelector(".hdr");
+    if(hdr&&bloq.parentNode!==scr)hdr.insertAdjacentElement("afterend",bloq);
+    scr.querySelectorAll(".card").forEach(el=>{if(el!==bloq)el.style.display="none";});
+  }else if(bloq){
+    bloq.remove();
+    scr.querySelectorAll(".card").forEach(el=>el.style.display="");
+  }
+  const card=document.querySelector('#scr-inicio .act-card[onclick*="\'simulacro\'"]');
+  if(card){
+    card.style.opacity=abierto?"":".55";
+    const t=card.querySelector('div[style*="font-weight:800"]');
+    if(t)t.textContent=(abierto?"":"🔒 ")+t.textContent.replace(/^🔒\s*/,"");
+  }
+}
 function aplicarBloqueoSemanas(){
+  aplicarBloqueoSimulacro();
   for(let s=1;s<=4;s++){
     const scr=E("scr-s"+s);
     if(!scr)continue;
@@ -1679,7 +1724,7 @@ function aplicarBloqueoSemanas(){
     }
   }
 }
-function N(e,a){SC.forEach(e=>{const a=E("scr-"+e);a&&a.classList.remove("on")}),document.querySelectorAll(".ntab").forEach(e=>e.classList.remove("on"));const r=E("scr-"+e);if(r&&r.classList.add("on"),a)a.classList.add("on");else{const a=document.querySelector(`.ntab[onclick*="'${e}'"]`);a&&a.classList.add("on")}/^s[1-4]$/.test(e)&&aplicarBloqueoSemanas(),"ranking-pub"===e&&cargarRankingPublico(),"insignias"===e&&cargarInsigniasReales(),"admin"===e&&chequearAccesoAdmin(),"dashboard"===e&&cargarDashboardPublico()}async function cargarDashboardPublico(){
+function N(e,a){SC.forEach(e=>{const a=E("scr-"+e);a&&a.classList.remove("on")}),document.querySelectorAll(".ntab").forEach(e=>e.classList.remove("on"));const r=E("scr-"+e);if(r&&r.classList.add("on"),a)a.classList.add("on");else{const a=document.querySelector(`.ntab[onclick*="'${e}'"]`);a&&a.classList.add("on")}(/^s[1-4]$/.test(e)||"simulacro"===e)&&aplicarBloqueoSemanas(),"ranking-pub"===e&&cargarRankingPublico(),"insignias"===e&&cargarInsigniasReales(),"admin"===e&&chequearAccesoAdmin(),"dashboard"===e&&cargarDashboardPublico()}async function cargarDashboardPublico(){
   if(!dbFS)return;
   try{
     const [pSnap,aSnap]=await Promise.all([
@@ -2045,6 +2090,57 @@ async function recalcularXP(){
     log('<div class="notif nv"><div class="ni">♻️</div><div class="nb"><div class="nt">XP recalculado</div><div class="nm">'+n+' participante(s) corregidos a partir de '+ev.docs.length+' eventos.</div></div></div>');
     await cargarDatosAdminReales();
     renderU();renderEmps();renderCobertura();
+  }catch(err){
+    console.error(err);
+    log('<div class="notif ny"><div class="ni">⚠️</div><div class="nb"><div class="nt">No se pudo completar</div><div class="nm">Detalle: '+(err&&err.message||err)+'</div></div></div>');
+  }
+}
+
+/* ===== DESHACER REGISTROS DE SIMULACRO ===== */
+async function deshacerSimulacro(){
+  if(!sesionAdmin||"general"!==sesionAdmin.rol)return void alert("Solo el administrador general puede ejecutar esta acción.");
+  if(!dbFS)return void alert("Sin conexión a la base de datos.");
+  const est=E("simu-undo-estado"), log=t=>{if(est)est.innerHTML=t;};
+  try{
+    log("⏳ Buscando registros de simulacro...");
+    const [regs,evs]=await Promise.all([
+      dbFS.collection("simulacro_registros").get(),
+      dbFS.collection("xp_eventos").where("actividad","==","Simulacro").get()
+    ]);
+    if(!regs.docs.length&&!evs.docs.length){
+      log('<div class="notif nv"><div class="ni">✅</div><div class="nb"><div class="nt">No hay registros de simulacro</div></div></div>');
+      return;
+    }
+    const xpPorPart={};
+    evs.docs.forEach(d=>{const v=d.data();if(v.participanteId)xpPorPart[v.participanteId]=(xpPorPart[v.participanteId]||0)+(v.xp||0);});
+    const afectados=Object.keys(xpPorPart).length;
+    if(!confirm("Se eliminarán:\n\n· "+regs.docs.length+" registro(s) de simulacro\n· "+evs.docs.length+" evento(s) de XP\n\nSe descontará el XP a "+afectados+" participante(s).\n\nEsta acción no se puede deshacer.\n\n¿Continuar?"))return;
+    log("⏳ Borrando registros...");
+    for(const col of [regs.docs,evs.docs]){
+      for(let i=0;i<col.length;i+=400){
+        const lote=dbFS.batch();
+        col.slice(i,i+400).forEach(d=>lote.delete(d.ref));
+        await lote.commit();
+      }
+    }
+    log("⏳ Descontando el XP...");
+    let n=0;
+    const ids=Object.keys(xpPorPart);
+    for(let i=0;i<ids.length;i+=300){
+      const lote=dbFS.batch();
+      ids.slice(i,i+300).forEach(id=>{
+        lote.update(dbFS.collection("participantes").doc(id),{xp:firebase.firestore.FieldValue.increment(-xpPorPart[id])});
+        n++;
+      });
+      await lote.commit();
+    }
+    if(participante&&participante.fid&&xpPorPart[participante.fid]){
+      participante.xp=Math.max(0,participante.xp-xpPorPart[participante.fid]);
+      renderXpBar();
+    }
+    log('<div class="notif nv"><div class="ni">🚨</div><div class="nb"><div class="nt">Simulacro reiniciado</div><div class="nm">'+regs.docs.length+' registro(s) y '+evs.docs.length+' evento(s) eliminados. XP descontado a '+n+' participante(s). Podrán registrarlo de nuevo a partir del 8 de octubre.</div></div></div>');
+    await cargarDatosAdminReales();
+    cargarSimulacroReal();renderU();renderEmps();
   }catch(err){
     console.error(err);
     log('<div class="notif ny"><div class="ni">⚠️</div><div class="nb"><div class="nt">No se pudo completar</div><div class="nm">Detalle: '+(err&&err.message||err)+'</div></div></div>');
