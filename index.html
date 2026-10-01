@@ -1110,6 +1110,15 @@ window.addEventListener("unhandledrejection",function(ev){
           <select class="fs" id="u-est" style="width:100px;" onchange="filtU()"><option value="">Todos</option><option>Activo</option><option>Inactivo</option></select>
           <button class="btn bp bsm" onclick="alert('✅ Usuario invitado al sistema')">+ Invitar</button>
         </div>
+        <div class="card" style="margin-bottom:10px;border:2px solid var(--az);">
+          <div class="st" style="color:var(--az);">🔄 Sincronizar con el listado de personal</div>
+          <div style="font-size:10px;color:var(--txt2);margin-bottom:8px;line-height:1.5;">
+            Completa el <strong>cargo, empresa y centro</strong> de los registrados cruzándolos con el listado oficial por nombre.<br>
+            Útil para quienes se inscribieron antes de que el cargo se llenara solo. No modifica el XP y se puede repetir sin riesgo.
+          </div>
+          <div id="sinc-estado" style="font-size:11px;margin-bottom:8px;"></div>
+          <button class="btn bp bw" onclick="sincronizarConListado()">🔄 Sincronizar datos de los registrados</button>
+        </div>
         <div class="card" style="margin-bottom:10px;border:2px solid var(--na);">
           <div class="st" style="color:var(--na);">👥 Registros duplicados</div>
           <div style="font-size:10px;color:var(--txt2);margin-bottom:8px;">Personas inscritas más de una vez. Al eliminar un duplicado se borran también sus eventos de XP.</div>
@@ -2031,6 +2040,56 @@ let DUPLICADOS=[];
 
 /* ===== CORREGIR DATOS DE UN PARTICIPANTE ===== */
 let _corrId=null,_corrElegido=null;
+
+/* ===== SINCRONIZAR REGISTRADOS CON EL LISTADO DE PERSONAL ===== */
+async function sincronizarConListado(){
+  if(!sesionAdmin||"general"!==sesionAdmin.rol)return void alert("Solo el administrador general puede ejecutar esta acción.");
+  if(!dbFS)return void alert("Sin conexión a la base de datos.");
+  const est=E("sinc-estado"), log=t=>{if(est)est.innerHTML=t;};
+  try{
+    log("⏳ Comparando con el listado de personal...");
+    const ps=await dbFS.collection("participantes").get();
+    const idx=new Map();
+    PERSONAL_REGISTRO.forEach(r=>idx.set(normNom(r.n),r));
+    const cambios=[], sinMatch=[];
+    ps.docs.forEach(d=>{
+      const p=d.data(), r=idx.get(normNom(p.nombre));
+      if(!r){sinMatch.push(p.nombre||"(sin nombre)");return;}
+      const upd={};
+      if((p.cargo||"")!==(r.g||""))upd.cargo=r.g||"";
+      if((p.empresa||"")!==r.e&&(EMPRESA_NOMBRE[p.empresa]||p.empresa)!==(EMPRESA_NOMBRE[r.e]||r.e))upd.empresa=r.e;
+      if((p.centro||"")!==r.c)upd.centro=r.c;
+      if(p.nombre!==r.n)upd.nombre=r.n;
+      if(Object.keys(upd).length)cambios.push({ref:d.ref,id:d.id,upd,nom:r.n});
+    });
+    if(!cambios.length){
+      log('<div class="notif nv"><div class="ni">✅</div><div class="nb"><div class="nt">Todo está sincronizado</div><div class="nm">Los '+ps.docs.length+' registrados ya coinciden con el listado.'+(sinMatch.length?' '+sinMatch.length+' no se encontraron en el listado: '+sinMatch.slice(0,5).join(", ")+(sinMatch.length>5?"...":""):"")+'</div></div></div>');
+      return;
+    }
+    if(!confirm("Se actualizarán los datos de "+cambios.length+" participante(s) según el listado de personal.\n\nEl XP no se modifica.\n\n¿Continuar?"))return;
+    let n=0;
+    for(let i=0;i<cambios.length;i+=200){
+      const lote=dbFS.batch();
+      cambios.slice(i,i+200).forEach(c=>{lote.update(c.ref,c.upd);n++;});
+      await lote.commit();
+      log("⏳ Actualizados "+n+" de "+cambios.length+"...");
+    }
+    // Reflejar también en los eventos de XP ya registrados
+    for(const c of cambios){
+      const ev=await dbFS.collection("xp_eventos").where("participanteId","==",c.id).get();
+      if(!ev.docs.length)continue;
+      const lote=dbFS.batch();
+      ev.docs.forEach(d=>lote.update(d.ref,{participanteNombre:c.nom,empresa:c.upd.empresa||d.data().empresa,centro:c.upd.centro||d.data().centro}));
+      await lote.commit();
+    }
+    log('<div class="notif nv"><div class="ni">🔄</div><div class="nb"><div class="nt">Sincronización completada</div><div class="nm">'+n+' participante(s) actualizados.'+(sinMatch.length?' <strong>'+sinMatch.length+' no están en el listado</strong> y hay que corregirlos a mano con el botón ✏️: '+sinMatch.slice(0,5).join(", ")+(sinMatch.length>5?"...":""):"")+'</div></div></div>');
+    await cargarDatosAdminReales();
+    renderU();renderDuplicados();renderEmps();renderCobertura();
+  }catch(err){
+    console.error(err);
+    log('<div class="notif ny"><div class="ni">⚠️</div><div class="nb"><div class="nt">No se pudo completar</div><div class="nm">Detalle: '+(err&&err.message||err)+'</div></div></div>');
+  }
+}
 function abrirCorregirUsuario(id){
   if(!sesionAdmin||"general"!==sesionAdmin.rol)return void alert("Solo el administrador general puede corregir registros.");
   const u=USR.find(x=>x.id===id);
