@@ -1641,8 +1641,16 @@ async function cargarDatosAdminReales(){
       dbFS.collection("participantes").get(),
       dbFS.collection("xp_eventos").orderBy("timestamp","desc").limit(3000).get()
     ]);
-    const parts=pSnap.docs.map(d=>Object.assign({id:d.id},d.data()));
-    const eventos=eSnap.docs.map(d=>d.data());
+    const parts=pSnap.docs.map(d=>{
+      const p=Object.assign({id:d.id},d.data());
+      p.empresa=EMPRESA_NOMBRE[p.empresa]||p.empresa;   // "LOG" -> "ANAVA LOGISTICS"
+      return p;
+    });
+    const eventos=eSnap.docs.map(d=>{
+      const v=d.data();
+      if(v.empresa)v.empresa=EMPRESA_NOMBRE[v.empresa]||v.empresa;
+      return v;
+    });
 
     // Usuarios reales
     USR=parts.map(p=>{
