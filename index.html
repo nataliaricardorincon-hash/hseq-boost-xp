@@ -1966,24 +1966,27 @@ async function cargarRankingPublico(){
 }
 /* El acceso al panel está oculto: 5 toques en el título lo revelan */
 let _tl=0,_tlT=null;
-function revelarAdmin(){
+function revelarAdmin(conScroll){
   try{
     const t=E("tab-admin");
-    if(t){t.style.display="";t.style.visibility="visible";t.scrollIntoView({behavior:"smooth",inline:"center",block:"nearest"});}
+    if(t){
+      t.style.display="";t.style.visibility="visible";
+      if(conScroll===true)t.scrollIntoView({behavior:"smooth",inline:"center",block:"nearest"});
+    }
   }catch(e){console.warn(e);}
   try{sesSet("hseq_admin_visible","1");}catch(e){}
 }
 function tocarLogo(){
   clearTimeout(_tlT);_tl++;
   _tlT=setTimeout(()=>{_tl=0;},3000);
-  if(_tl>=5){_tl=0;revelarAdmin();}
+  if(_tl>=5){_tl=0;revelarAdmin(true);}
 }
 /* El acceso tambien se abre con ?admin=1 en la URL, y se mantiene mientras dure la pestaña del navegador */
 (function(){
   try{
     if(new URLSearchParams(location.search).get("admin")||sesGet("hseq_admin_visible")==="1"){
-      document.addEventListener("DOMContentLoaded",revelarAdmin);
-      [0,200,600,1500,3000].forEach(ms=>setTimeout(revelarAdmin,ms));
+      document.addEventListener("DOMContentLoaded",()=>revelarAdmin(false));
+      [0,200,600,1500,3000].forEach(ms=>setTimeout(()=>revelarAdmin(false),ms));
     }
   }catch(e){}
 })();
