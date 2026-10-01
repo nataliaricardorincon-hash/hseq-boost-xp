@@ -1644,6 +1644,14 @@ window.addEventListener("unhandledrejection",function(ev){
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 <script>const E=e=>document.getElementById(e),SC=["inicio","registro","apertura","simulacro","presencial","s1","s2","s3","s4","juegos","sorpresas","ranking-pub","insignias","dashboard","admin"];
+/* Almacenamiento tolerante a navegadores con cookies/almacenamiento bloqueado */
+const _memStore={};
+function almGet(k){try{const v=localStorage.getItem(k);return v===null?(k in _memStore?_memStore[k]:null):v;}catch(e){return k in _memStore?_memStore[k]:null;}}
+function almSet(k,v){_memStore[k]=v;try{localStorage.setItem(k,v);}catch(e){}}
+function sesGet(k){try{const v=sessionStorage.getItem(k);return v===null?(k in _memStore?_memStore[k]:null):v;}catch(e){return k in _memStore?_memStore[k]:null;}}
+function sesSet(k,v){_memStore[k]=v;try{sessionStorage.setItem(k,v);}catch(e){}}
+function sesDel(k){delete _memStore[k];try{sessionStorage.removeItem(k);}catch(e){}}
+
 /* ===== APERTURA PROGRESIVA DE LAS SEMANAS ===== */
 function semanaDisponible(s){
   const r=rangoSemana(s);
@@ -1947,9 +1955,11 @@ async function cargarRankingPublico(){
 /* El acceso al panel está oculto: 5 toques en el título lo revelan */
 let _tl=0,_tlT=null;
 function revelarAdmin(){
-  const t=E("tab-admin");
-  if(t){t.style.display="";t.scrollIntoView({behavior:"smooth",inline:"center",block:"nearest"});}
-  sesSet("hseq_admin_visible","1");
+  try{
+    const t=E("tab-admin");
+    if(t){t.style.display="";t.style.visibility="visible";t.scrollIntoView({behavior:"smooth",inline:"center",block:"nearest"});}
+  }catch(e){console.warn(e);}
+  try{sesSet("hseq_admin_visible","1");}catch(e){}
 }
 function tocarLogo(){
   clearTimeout(_tlT);_tl++;
@@ -1961,7 +1971,7 @@ function tocarLogo(){
   try{
     if(new URLSearchParams(location.search).get("admin")||sesGet("hseq_admin_visible")==="1"){
       document.addEventListener("DOMContentLoaded",revelarAdmin);
-      setTimeout(revelarAdmin,400);
+      [0,200,600,1500,3000].forEach(ms=>setTimeout(revelarAdmin,ms));
     }
   }catch(e){}
 })();
@@ -3363,13 +3373,6 @@ async function canjearCodigoDorado(){
   c.innerHTML='<div class="notif ny" style="margin-top:10px;"><div class="ni">📡</div><div class="nb"><div class="nt">Tu XP quedó guardado en este dispositivo, pero no se pudo '+accion+'</div><div class="nm">Detalle técnico: <strong>'+cod+'</strong>. Muéstraselo al administrador de la campaña.</div></div></div>';
   c.style.display="block";
 }
-/* Almacenamiento tolerante a navegadores con cookies/almacenamiento bloqueado */
-const _memStore={};
-function almGet(k){try{const v=localStorage.getItem(k);return v===null?(k in _memStore?_memStore[k]:null):v;}catch(e){return k in _memStore?_memStore[k]:null;}}
-function almSet(k,v){_memStore[k]=v;try{localStorage.setItem(k,v);}catch(e){}}
-function sesGet(k){try{const v=sessionStorage.getItem(k);return v===null?(k in _memStore?_memStore[k]:null):v;}catch(e){return k in _memStore?_memStore[k]:null;}}
-function sesSet(k,v){_memStore[k]=v;try{sessionStorage.setItem(k,v);}catch(e){}}
-function sesDel(k){delete _memStore[k];try{sessionStorage.removeItem(k);}catch(e){}}
 function mostrarExitoRegistro(msg){
   E("reg-msg").textContent=msg;
   E("reg-ok").style.display="flex",E("reg-ok").classList.remove("fade"),E("reg-ok").offsetWidth,E("reg-ok").classList.add("fade");
