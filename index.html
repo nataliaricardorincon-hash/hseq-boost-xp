@@ -2052,11 +2052,9 @@ async function sincronizarConListado(){
   try{
     log("⏳ Comparando con el listado de personal...");
     const ps=await dbFS.collection("participantes").get();
-    const idx=new Map();
-    PERSONAL_REGISTRO.forEach(r=>idx.set(normNom(r.n),r));
     const cambios=[], sinMatch=[];
     ps.docs.forEach(d=>{
-      const p=d.data(), r=idx.get(normNom(p.nombre));
+      const p=d.data(), r=buscarEnListado(p.nombre);
       if(!r){sinMatch.push(p.nombre||"(sin nombre)");return;}
       const upd={};
       if((p.cargo||"")!==(r.g||""))upd.cargo=r.g||"";
@@ -2142,6 +2140,27 @@ async function guardarCorreccion(){
     renderU();renderDuplicados();renderEmps();renderCobertura();
   }catch(err){console.error(err);alert("No se pudo corregir: "+(err&&err.message||err));}
 }
+
+/* Cruce de nombres tolerante: orden distinto, tildes, nombres incompletos */
+function tokensNom(s){return normNom(s).split(" ").filter(Boolean);}
+function buscarEnListado(nombre){
+  const t=tokensNom(nombre);
+  if(!t.length)return null;
+  const n=normNom(nombre);
+  // 1) coincidencia exacta
+  let m=PERSONAL_REGISTRO.filter(r=>normNom(r.n)===n);
+  if(m.length===1)return m[0];
+  // 2) mismas palabras en cualquier orden
+  const clave=t.slice().sort().join(" ");
+  m=PERSONAL_REGISTRO.filter(r=>tokensNom(r.n).slice().sort().join(" ")===clave);
+  if(m.length===1)return m[0];
+  // 3) el nombre escrito está contenido en el del listado (nombre incompleto)
+  if(t.length>=2){
+    m=PERSONAL_REGISTRO.filter(r=>{const s=new Set(tokensNom(r.n));return t.every(x=>s.has(x));});
+    if(m.length===1)return m[0];
+  }
+  return null;
+}
 function calcularDuplicados(parts){
   const g={};
   parts.forEach(p=>{const k=normNom(p.nombre);(g[k]=g[k]||[]).push(p);});
@@ -2185,7 +2204,10 @@ async function eliminarParticipante(id,nombre){
 }
 function calcularCobertura(parts){
   const inscritos=new Map();
-  parts.forEach(p=>inscritos.set(normNom(p.nombre),p));
+  parts.forEach(p=>{
+    const r=buscarEnListado(p.nombre);
+    inscritos.set(r?normNom(r.n):normNom(p.nombre),p);
+  });
   const reg=[],falt=[];
   PERSONAL_REGISTRO.forEach(r=>{
     const p=inscritos.get(normNom(r.n));
@@ -3103,8 +3125,7 @@ function registrarInterno(){
   }
   ["reg-nombre","reg-cc","reg-emp","reg-ct"].forEach(id=>{const el=E(id);if(el)el.style.border="";});
   // El nombre debe coincidir con el listado de personal
-  const nrm=s=>(s||"").toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\s+/g," ").trim();
-  if(!PERSONAL_REGISTRO.some(r=>nrm(r.n)===nrm(e))){
+  if(!buscarEnListado(e)){
     const err2=E("reg-error");
     if(err2){
       err2.innerHTML='<div class="notif ny" style="margin-top:10px;"><div class="ni">🔎</div><div class="nb"><div class="nt">No encontramos ese nombre en el listado de personal</div><div class="nm">Borra el campo, escribe 3 letras de tu <strong>primer apellido</strong> y <strong>toca tu nombre en la lista</strong> que aparece. Así se llenan solos tu empresa, centro y cargo.</div></div></div>';
