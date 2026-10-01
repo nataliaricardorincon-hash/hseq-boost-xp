@@ -1575,6 +1575,18 @@ window.addEventListener("unhandledrejection",function(ev){
           <button class="btn bp bw" onclick="recalcularXP()">♻️ Recalcular XP de todos</button>
         </div>
         <div class="card" style="border:2px solid var(--na);margin-bottom:10px;">
+          <div class="st" style="color:var(--na);">📅 XP ganado antes de tiempo</div>
+          <div style="background:#fff7ed;border:.5px solid #fed7aa;border-radius:8px;padding:9px;font-size:10px;color:#9a3412;margin-bottom:10px;line-height:1.5;">
+            Revisa el XP obtenido en actividades de las semanas 2, 3 y 4 <strong>antes de que esas semanas se habilitaran</strong>.<br>
+            Primero consulta el detalle; luego decides si revertirlo.
+          </div>
+          <div style="display:flex;gap:6px;margin-bottom:8px;">
+            <button class="btn bo bw" onclick="auditarAnticipado()">🔎 Revisar</button>
+            <button class="btn bro bw" onclick="revertirAnticipado()">↩️ Revertir ese XP</button>
+          </div>
+          <div id="antic-estado" style="font-size:11px;"></div>
+        </div>
+        <div class="card" style="border:2px solid var(--na);margin-bottom:10px;">
           <div class="st" style="color:var(--na);">🚨 Deshacer registros de Simulacro</div>
           <div style="background:#fff7ed;border:.5px solid #fed7aa;border-radius:8px;padding:9px;font-size:10px;color:#9a3412;margin-bottom:10px;line-height:1.5;">
             Borra <strong>todos</strong> los registros de simulacro y <strong>descuenta los 100 XP</strong> a quienes los hayan cargado.<br>
@@ -2108,6 +2120,75 @@ async function recalcularXP(){
 }
 
 /* ===== DESHACER REGISTROS DE SIMULACRO ===== */
+
+/* ===== AUDITORÍA DE XP GANADO ANTES DE TIEMPO ===== */
+const ACT_SEMANA={
+  "Mi EPP en Regla":1,"Ruleta (Semana 1)":1,"Mi Trabajo Bien Hecho":1,"Antes de Arrancar":1,
+  "El Error Oculto":2,"Reto del EPP":2,"Ordena la Secuencia":2,"Detecta la No Conformidad":2,"Señales que Salvan":2,
+  "¿Qué harías tú?":3,"Mi Familia Me Espera":3,"Ruta Saludable":3,"La Voz del Cliente":3,"Factores de Riesgo Vial":3,
+  "Mito o Realidad":4,"Clasifica el Residuo":4,"Compromiso Final":4,"Ciclo PHVA en Acción":4,"Conductor Seguro":4
+};
+function semanaDeActividad(a){
+  if(!a)return null;
+  const base=a.split(":")[0].trim();
+  return ACT_SEMANA[base]||null;
+}
+let ANTICIPADOS=[];
+async function auditarAnticipado(){
+  if(!dbFS)return void alert("Sin conexión a la base de datos.");
+  const est=E("antic-estado"), log=t=>{if(est)est.innerHTML=t;};
+  try{
+    log("⏳ Revisando eventos...");
+    const ev=await dbFS.collection("xp_eventos").get();
+    ANTICIPADOS=ev.docs.filter(d=>{
+      const v=d.data(), s=semanaDeActividad(v.actividad);
+      return s&&s>1&&v.timestamp<rangoSemana(s).ini;
+    }).map(d=>Object.assign({id:d.id,ref:d.ref},d.data()));
+    if(!ANTICIPADOS.length){
+      log('<div class="notif nv"><div class="ni">✅</div><div class="nb"><div class="nt">Nadie se adelantó</div><div class="nm">No hay XP ganado antes de que su semana se habilitara.</div></div></div>');
+      return;
+    }
+    const porPers={};
+    ANTICIPADOS.forEach(v=>{
+      const k=v.participanteNombre||v.participanteId;
+      if(!porPers[k])porPers[k]={xp:0,acts:[]};
+      porPers[k].xp+=v.xp||0;
+      porPers[k].acts.push(v.actividad+" (S"+semanaDeActividad(v.actividad)+")");
+    });
+    const totXP=ANTICIPADOS.reduce((s,v)=>s+(v.xp||0),0);
+    const filas=Object.entries(porPers).sort((a,b)=>b[1].xp-a[1].xp).map(([n,d])=>
+      `<tr><td style="font-weight:700;font-size:11px;">${n}</td><td style="color:var(--xp);font-weight:800;">${d.xp} XP</td><td style="font-size:9px;color:var(--txt2);">${[...new Set(d.acts)].join(", ")}</td></tr>`).join("");
+    log('<div class="notif ny" style="margin-bottom:8px;"><div class="ni">📅</div><div class="nb"><div class="nt">'+Object.keys(porPers).length+' persona(s) se adelantaron</div><div class="nm">'+ANTICIPADOS.length+' evento(s) · <strong>'+totXP+' XP</strong> en total.</div></div></div>'
+      +'<div style="max-height:320px;overflow-y:auto;"><table class="tbl"><thead><tr><th>Participante</th><th>XP</th><th>Actividades</th></tr></thead><tbody>'+filas+'</tbody></table></div>');
+  }catch(err){console.error(err);log('<div class="notif ny"><div class="ni">⚠️</div><div class="nb"><div class="nt">Error</div><div class="nm">'+(err&&err.message||err)+'</div></div></div>');}
+}
+async function revertirAnticipado(){
+  if(!sesionAdmin||"general"!==sesionAdmin.rol)return void alert("Solo el administrador general puede revertir XP.");
+  if(!ANTICIPADOS.length)return void alert("Primero toca «Revisar» para ver qué se adelantó.");
+  const porPart={};
+  ANTICIPADOS.forEach(v=>{if(v.participanteId)porPart[v.participanteId]=(porPart[v.participanteId]||0)+(v.xp||0);});
+  const tot=Object.values(porPart).reduce((a,b)=>a+b,0);
+  if(!confirm("Se eliminarán "+ANTICIPADOS.length+" evento(s) y se descontarán "+tot+" XP a "+Object.keys(porPart).length+" participante(s).\n\nPodrán volver a hacer esas actividades cuando su semana se habilite.\n\n¿Continuar?"))return;
+  const est=E("antic-estado"), log=t=>{if(est)est.innerHTML=t;};
+  try{
+    for(let i=0;i<ANTICIPADOS.length;i+=400){
+      const lote=dbFS.batch();
+      ANTICIPADOS.slice(i,i+400).forEach(v=>lote.delete(v.ref));
+      await lote.commit();
+    }
+    const ids=Object.keys(porPart);
+    for(let i=0;i<ids.length;i+=300){
+      const lote=dbFS.batch();
+      ids.slice(i,i+300).forEach(id=>lote.update(dbFS.collection("participantes").doc(id),{xp:firebase.firestore.FieldValue.increment(-porPart[id])}));
+      await lote.commit();
+    }
+    log('<div class="notif nv"><div class="ni">↩️</div><div class="nb"><div class="nt">XP revertido</div><div class="nm">'+tot+' XP descontados a '+ids.length+' participante(s). Las actividades quedan disponibles de nuevo.</div></div></div>');
+    ANTICIPADOS=[];
+    completadasSet=new Set();
+    await cargarDatosAdminReales();
+    renderU();renderEmps();
+  }catch(err){console.error(err);log('<div class="notif ny"><div class="ni">⚠️</div><div class="nb"><div class="nt">Error</div><div class="nm">'+(err&&err.message||err)+'</div></div></div>');}
+}
 async function deshacerSimulacro(){
   if(!sesionAdmin||"general"!==sesionAdmin.rol)return void alert("Solo el administrador general puede ejecutar esta acción.");
   if(!dbFS)return void alert("Sin conexión a la base de datos.");
