@@ -1093,11 +1093,7 @@ window.addEventListener("unhandledrejection",function(ev){
             <div id="ov-top3"><div class="notif na2"><div class="ni">📭</div><div class="nb"><div class="nt">Aún no hay participantes registrados</div></div></div></div>
           </div>
           <div class="card"><div class="st">📋 Estado del mes</div>
-            <div style="margin-bottom:8px;"><div style="font-size:10px;font-weight:700;color:var(--txt2);margin-bottom:3px;">Semana 1 completada</div><div style="height:5px;border-radius:3px;background:#e2e8f0;overflow:hidden;"><div style="width:100%;height:100%;background:var(--ve);border-radius:3px;"></div></div></div>
-            <div style="margin-bottom:8px;"><div style="font-size:10px;font-weight:700;color:var(--txt2);margin-bottom:3px;">Semana 2 completada</div><div style="height:5px;border-radius:3px;background:#e2e8f0;overflow:hidden;"><div style="width:100%;height:100%;background:var(--ve);border-radius:3px;"></div></div></div>
-            <div style="margin-bottom:8px;"><div style="font-size:10px;font-weight:700;color:var(--txt2);margin-bottom:3px;">Semana 3 en curso</div><div style="height:5px;border-radius:3px;background:#e2e8f0;overflow:hidden;"><div style="width:68%;height:100%;background:var(--am);border-radius:3px;"></div></div></div>
-            <div><div style="font-size:10px;font-weight:700;color:var(--txt2);margin-bottom:3px;">Semana 4 pendiente</div><div style="height:5px;border-radius:3px;background:#e2e8f0;overflow:hidden;"><div style="width:0%;height:100%;background:var(--b);border-radius:3px;"></div></div></div>
-          </div>
+            <div id="estado-mes"></div></div>
         </div>
       </div>
 
@@ -1665,6 +1661,37 @@ function categorizarActividad(lbl){
   if("Identificar Peligros"===lbl)return{tipo:"jue",n:"Identificar Peligros"};
   return{tipo:"act",n:lbl.split(":")[0]};
 }
+
+/* ===== ESTADO DEL MES (calculado con las fechas reales) ===== */
+function renderEstadoMes(){
+  const c=E("estado-mes");
+  if(!c)return;
+  const t=Date.now();
+  let html="";
+  if(t<MES_INICIO){
+    const dias=Math.ceil((MES_INICIO-t)/86400000);
+    html='<div class="notif na2"><div class="ni">🗓️</div><div class="nb"><div class="nt">El mes aún no inicia</div><div class="nm">Arranca el 1 de octubre'+(dias>0?" · faltan "+dias+" día(s)":"")+'.</div></div></div>';
+  }
+  for(let s=1;s<=4;s++){
+    const r=rangoSemana(s);
+    let lbl,pct,col;
+    if(t>r.fin){lbl="completada";pct=100;col="var(--ve)";}
+    else if(t>=r.ini){lbl="en curso";pct=Math.max(3,Math.round((t-r.ini)/(r.fin-r.ini)*100));col="var(--am)";}
+    else{lbl="pendiente";pct=0;col="var(--b)";}
+    const f=d=>new Date(d).getDate()+"/"+(new Date(d).getMonth()+1);
+    html+='<div style="margin-bottom:8px;">'
+      +'<div style="display:flex;justify-content:space-between;font-size:10px;font-weight:700;color:var(--txt2);margin-bottom:3px;">'
+      +'<span>Semana '+s+' '+lbl+'</span><span style="font-weight:600;">'+f(r.ini)+' – '+f(r.fin)+'</span></div>'
+      +'<div style="height:5px;border-radius:3px;background:#e2e8f0;overflow:hidden;">'
+      +'<div style="width:'+pct+'%;height:100%;background:'+col+';border-radius:3px;"></div></div></div>';
+  }
+  if(t>MES_FIN)html+='<div class="notif nv" style="margin-top:8px;"><div class="ni">🏁</div><div class="nb"><div class="nt">Mes HSEQ finalizado</div><div class="nm">El XP se cerró el 31 de octubre de 2026.</div></div></div>';
+  else if(t>=MES_INICIO){
+    const rest=Math.ceil((MES_FIN-t)/86400000);
+    html+='<div style="margin-top:8px;font-size:10px;color:var(--txt2);text-align:center;">⏳ Quedan <strong>'+rest+'</strong> día(s) de campaña</div>';
+  }
+  c.innerHTML=html;
+}
 async function cargarDatosAdminReales(){
   if(!dbFS)return;
   try{
@@ -1961,12 +1988,14 @@ function abrirPanelAdmin(){
   aplicarPermisos();
   cargarDatosAdminReales().then(()=>{renderEmps();renderU();});
   cargarAcisReales();
+  renderEstadoMes();
   clearInterval(_adminTimer);
   _adminTimer=setInterval(()=>{
     if(!sesionAdmin||"none"===E("admin-content").style.display)return;
     cargarDatosAdminReales().then(()=>{
       const act=document.querySelector(".ap.on");
       if(!act)return;
+      renderEstadoMes();
       if("ap-empresas"===act.id){renderEmps();renderCobertura();}
       if("ap-usuarios"===act.id){renderU();renderDuplicados();}
     });
