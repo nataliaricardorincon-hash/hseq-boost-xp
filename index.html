@@ -1513,6 +1513,15 @@ window.addEventListener("unhandledrejection",function(ev){
       <!-- CONFIGURACIÓN -->
       <div id="ap-config" class="ap">
         <div style="font-size:13px;font-weight:800;color:var(--az);margin-bottom:10px;">🛠️ Configuración del Sistema</div>
+        <div class="card" style="border:2px solid var(--ve);margin-bottom:10px;">
+          <div class="st" style="color:var(--ve);">🎁 Acreditar XP de bienvenida</div>
+          <div style="background:#f0fdf4;border:.5px solid #bbf7d0;border-radius:8px;padding:9px;font-size:10px;color:#166534;margin-bottom:10px;line-height:1.5;">
+            Otorga los <strong>10 XP de bienvenida</strong> a quienes ya estaban inscritos y los perdieron con el reinicio, o que se registraron antes del 1 de octubre.<br>
+            Es seguro ejecutarlo varias veces: <strong>solo acredita a quien no los tenga</strong>, nunca los duplica.
+          </div>
+          <div id="bienv-estado" style="font-size:11px;margin-bottom:8px;"></div>
+          <button class="btn bp bw" onclick="acreditarBienvenida()">🎁 Acreditar a los ya inscritos</button>
+        </div>
         <div class="card" style="border:2px solid var(--ro);margin-bottom:10px;">
           <div class="st" style="color:var(--ro);">🧹 Reiniciar XP de la campaña</div>
           <div style="background:#fef2f2;border:.5px solid #fecaca;border-radius:8px;padding:9px;font-size:10px;color:#991b1b;margin-bottom:10px;line-height:1.5;">
@@ -1800,6 +1809,49 @@ function verificarPinAdmin(){
 }
 
 /* ===== REINICIO DE CAMPAÑA (solo administrador general) ===== */
+
+/* ===== ACREDITAR XP DE BIENVENIDA A LOS YA INSCRITOS ===== */
+async function acreditarBienvenida(){
+  if(!sesionAdmin||"general"!==sesionAdmin.rol)return void alert("Solo el administrador general puede ejecutar esta acción.");
+  if(!dbFS)return void alert("Sin conexión a la base de datos.");
+  const est=E("bienv-estado"), log=t=>{if(est)est.innerHTML=t;};
+  const XP_BIENVENIDA=10, ACT="Registro (bienvenida)";
+  try{
+    log("⏳ Revisando quién ya tiene su XP de bienvenida...");
+    const [ps,ev]=await Promise.all([
+      dbFS.collection("participantes").get(),
+      dbFS.collection("xp_eventos").where("actividad","==",ACT).get()
+    ]);
+    const yaTienen=new Set(ev.docs.map(d=>d.data().participanteId));
+    const faltan=ps.docs.filter(d=>!yaTienen.has(d.id));
+    if(!faltan.length){
+      log('<div class="notif nv"><div class="ni">✅</div><div class="nb"><div class="nt">No hay nada que acreditar</div><div class="nm">Los '+ps.docs.length+' participantes ya tienen su XP de bienvenida.</div></div></div>');
+      return;
+    }
+    if(!confirm("Se otorgarán "+XP_BIENVENIDA+" XP de bienvenida a "+faltan.length+" participante(s) que no los tienen.\n\n¿Continuar?"))return;
+    let n=0;
+    for(let i=0;i<faltan.length;i+=200){
+      const lote=dbFS.batch();
+      faltan.slice(i,i+200).forEach(d=>{
+        const p=d.data();
+        lote.update(d.ref,{xp:firebase.firestore.FieldValue.increment(XP_BIENVENIDA)});
+        lote.set(dbFS.collection("xp_eventos").doc(),{
+          participanteId:d.id, participanteNombre:p.nombre||"", empresa:p.empresa||"",
+          centro:p.centro||"", actividad:ACT, xp:XP_BIENVENIDA, timestamp:Math.max(Date.now(),MES_INICIO)
+        });
+        n++;
+      });
+      await lote.commit();
+      log("⏳ Acreditados "+n+" de "+faltan.length+"...");
+    }
+    if(participante&&participante.fid&&!yaTienen.has(participante.fid)){participante.xp+=XP_BIENVENIDA;renderXpBar();}
+    log('<div class="notif nv"><div class="ni">🎁</div><div class="nb"><div class="nt">XP de bienvenida acreditado</div><div class="nm">'+n+' participante(s) recibieron sus '+XP_BIENVENIDA+' XP. Los demás ya los tenían.</div></div></div>');
+    cargarDatosAdminReales();
+  }catch(err){
+    console.error(err);
+    log('<div class="notif ny"><div class="ni">⚠️</div><div class="nb"><div class="nt">No se pudo completar</div><div class="nm">Detalle: '+(err&&err.message||err)+'</div></div></div>');
+  }
+}
 async function reiniciarCampana(){
   if(!sesionAdmin||"general"!==sesionAdmin.rol)return void alert("Solo el administrador general puede reiniciar la campaña.");
   if(!dbFS)return void alert("Sin conexión a la base de datos.");
