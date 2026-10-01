@@ -1563,6 +1563,15 @@ window.addEventListener("unhandledrejection",function(ev){
           <div id="bienv-estado" style="font-size:11px;margin-bottom:8px;"></div>
           <button class="btn bp bw" onclick="acreditarBienvenida()">🎁 Acreditar a los ya inscritos</button>
         </div>
+        <div class="card" style="border:2px solid var(--az);margin-bottom:10px;">
+          <div class="st" style="color:var(--az);">♻️ Recalcular XP desde los eventos</div>
+          <div style="background:#eff6ff;border:.5px solid #bfdbfe;border-radius:8px;padding:9px;font-size:10px;color:var(--az);margin-bottom:10px;line-height:1.5;">
+            Vuelve a calcular el XP de cada participante <strong>sumando todos sus eventos registrados</strong>.<br>
+            Úsalo si los contadores quedaron desajustados. Es la fuente de verdad: no inventa ni duplica puntos, solo refleja lo que realmente se ganó.
+          </div>
+          <div id="recalc-estado" style="font-size:11px;margin-bottom:8px;"></div>
+          <button class="btn bp bw" onclick="recalcularXP()">♻️ Recalcular XP de todos</button>
+        </div>
         <div class="card" style="border:2px solid var(--na);margin-bottom:10px;">
           <div class="st" style="color:var(--na);">🗑️ Borrar registros de prueba</div>
           <div style="background:#fff7ed;border:.5px solid #fed7aa;border-radius:8px;padding:9px;font-size:10px;color:#9a3412;margin-bottom:10px;line-height:1.5;">
@@ -1956,6 +1965,44 @@ async function acreditarBienvenida(){
 }
 
 /* ===== LIMPIAR REGISTROS DE PRUEBA ANTERIORES AL INICIO ===== */
+
+/* ===== RECALCULAR XP DESDE LOS EVENTOS (fuente de verdad) ===== */
+async function recalcularXP(){
+  if(!sesionAdmin||"general"!==sesionAdmin.rol)return void alert("Solo el administrador general puede ejecutar esta acción.");
+  if(!dbFS)return void alert("Sin conexión a la base de datos.");
+  const est=E("recalc-estado"), log=t=>{if(est)est.innerHTML=t;};
+  try{
+    log("⏳ Leyendo eventos de XP...");
+    const [ps,ev]=await Promise.all([
+      dbFS.collection("participantes").get(),
+      dbFS.collection("xp_eventos").get()
+    ]);
+    const suma={};
+    ev.docs.forEach(d=>{const v=d.data();if(v.participanteId)suma[v.participanteId]=(suma[v.participanteId]||0)+(v.xp||0);});
+    const cambios=ps.docs.filter(d=>(d.data().xp||0)!==(suma[d.id]||0));
+    if(!cambios.length){
+      log('<div class="notif nv"><div class="ni">✅</div><div class="nb"><div class="nt">Todo cuadra</div><div class="nm">El XP de los '+ps.docs.length+' participantes coincide con sus '+ev.docs.length+' eventos.</div></div></div>');
+      return;
+    }
+    const det=cambios.slice(0,4).map(d=>d.data().nombre+": "+(d.data().xp||0)+" → "+(suma[d.id]||0)).join("\n");
+    if(!confirm("Se corregirá el XP de "+cambios.length+" participante(s) según sus eventos:\n\n"+det+(cambios.length>4?"\n...":"")+"\n\n¿Continuar?"))return;
+    let n=0;
+    for(let i=0;i<cambios.length;i+=300){
+      const lote=dbFS.batch();
+      cambios.slice(i,i+300).forEach(d=>{lote.update(d.ref,{xp:suma[d.id]||0});n++;});
+      await lote.commit();
+      log("⏳ Corregidos "+n+" de "+cambios.length+"...");
+    }
+    if(participante&&participante.fid)participante.xp=suma[participante.fid]||0;
+    renderXpBar();
+    log('<div class="notif nv"><div class="ni">♻️</div><div class="nb"><div class="nt">XP recalculado</div><div class="nm">'+n+' participante(s) corregidos a partir de '+ev.docs.length+' eventos.</div></div></div>');
+    await cargarDatosAdminReales();
+    renderU();renderEmps();renderCobertura();
+  }catch(err){
+    console.error(err);
+    log('<div class="notif ny"><div class="ni">⚠️</div><div class="nb"><div class="nt">No se pudo completar</div><div class="nm">Detalle: '+(err&&err.message||err)+'</div></div></div>');
+  }
+}
 async function limpiarRegistrosPrevios(){
   if(!sesionAdmin||"general"!==sesionAdmin.rol)return void alert("Solo el administrador general puede ejecutar esta acción.");
   if(!dbFS)return void alert("Sin conexión a la base de datos.");
@@ -1994,7 +2041,7 @@ async function limpiarRegistrosPrevios(){
 async function reiniciarCampana(){
   if(!sesionAdmin||"general"!==sesionAdmin.rol)return void alert("Solo el administrador general puede reiniciar la campaña.");
   if(!dbFS)return void alert("Sin conexión a la base de datos.");
-  if(!confirm("Esto pondrá en CERO el XP de todos los participantes y borrará los eventos de XP anteriores al 1 de octubre de 2026.\n\nLos registros de personas se conservan.\n\n¿Continuar?"))return;
+  if(!confirm("⚠️ ATENCIÓN: la campaña YA ESTÁ EN CURSO.\n\nEsto pondrá en CERO el XP de TODOS los participantes, incluido el que ya ganaron este mes.\n\nSi solo quieres limpiar datos de prueba, usa el botón naranja. Si los contadores están desajustados, usa \"Recalcular XP\".\n\n¿Seguro que quieres borrar el XP de todos?"))return;
   if(!confirm("Confirmación final: esta acción NO se puede deshacer.\n\n¿Reiniciar el marcador?"))return;
   const est=E("reset-estado");
   const log=t=>{if(est)est.innerHTML=t;};
