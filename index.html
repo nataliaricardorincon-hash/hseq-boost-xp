@@ -1634,7 +1634,52 @@ window.addEventListener("unhandledrejection",function(ev){
 
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-<script>const E=e=>document.getElementById(e),SC=["inicio","registro","apertura","simulacro","presencial","s1","s2","s3","s4","juegos","sorpresas","ranking-pub","insignias","dashboard","admin"];function N(e,a){SC.forEach(e=>{const a=E("scr-"+e);a&&a.classList.remove("on")}),document.querySelectorAll(".ntab").forEach(e=>e.classList.remove("on"));const r=E("scr-"+e);if(r&&r.classList.add("on"),a)a.classList.add("on");else{const a=document.querySelector(`.ntab[onclick*="'${e}'"]`);a&&a.classList.add("on")}"ranking-pub"===e&&cargarRankingPublico(),"insignias"===e&&cargarInsigniasReales(),"admin"===e&&chequearAccesoAdmin(),"dashboard"===e&&cargarDashboardPublico()}async function cargarDashboardPublico(){
+<script>const E=e=>document.getElementById(e),SC=["inicio","registro","apertura","simulacro","presencial","s1","s2","s3","s4","juegos","sorpresas","ranking-pub","insignias","dashboard","admin"];
+/* ===== APERTURA PROGRESIVA DE LAS SEMANAS ===== */
+function semanaDisponible(s){
+  const r=rangoSemana(s);
+  return Date.now()>=r.ini;   // la semana abre en su fecha y ya no se cierra
+}
+function aplicarBloqueoSemanas(){
+  for(let s=1;s<=4;s++){
+    const scr=E("scr-s"+s);
+    if(!scr)continue;
+    const tab=document.querySelector('.ntab[onclick*="\'s'+s+'\'"]');
+    const abierta=semanaDisponible(s);
+    if(tab){
+      const base=tab.textContent.replace(/^🔒\s*/,"");
+      tab.textContent=abierta?base:"🔒 "+base;
+      tab.style.opacity=abierta?"":".55";
+    }
+    let bloq=E("bloq-s"+s);
+    if(!abierta){
+      if(!bloq){
+        const r=rangoSemana(s), f=d=>new Date(d).getDate()+" de octubre";
+        bloq=document.createElement("div");
+        bloq.id="bloq-s"+s;
+        bloq.className="card";
+        bloq.style.cssText="border:2px solid var(--na);text-align:center;padding:22px 16px;";
+        bloq.innerHTML='<div style="font-size:42px;margin-bottom:6px;">🔒</div>'
+          +'<div style="font-size:15px;font-weight:800;color:var(--az);margin-bottom:6px;">Semana '+s+' aún no está disponible</div>'
+          +'<div style="font-size:12px;color:var(--txt2);line-height:1.6;">Se habilita el <strong>'+f(r.ini)+'</strong>.<br>Mientras tanto puedes avanzar en las semanas ya abiertas, los Juegos y el Detector de Riesgos.</div>';
+      }
+      const hdr=scr.querySelector(".hdr");
+      if(hdr&&bloq.parentNode!==scr)hdr.insertAdjacentElement("afterend",bloq);
+      scr.querySelectorAll(".g4,.g3,.card.week-panel").forEach(el=>{if(el!==bloq)el.style.display="none";});
+    }else if(bloq){
+      bloq.remove();
+      scr.querySelectorAll(".g4,.g3").forEach(el=>el.style.display="");
+    }
+    // Tarjeta de la semana en la pantalla de Inicio
+    const card=document.querySelector('#scr-inicio .act-card[onclick*="\'s'+s+'\'"]');
+    if(card){
+      card.style.opacity=abierta?"":".55";
+      const t=card.querySelector('div[style*="font-weight:800"]');
+      if(t)t.textContent=(abierta?"":"🔒 ")+t.textContent.replace(/^🔒\s*/,"");
+    }
+  }
+}
+function N(e,a){SC.forEach(e=>{const a=E("scr-"+e);a&&a.classList.remove("on")}),document.querySelectorAll(".ntab").forEach(e=>e.classList.remove("on"));const r=E("scr-"+e);if(r&&r.classList.add("on"),a)a.classList.add("on");else{const a=document.querySelector(`.ntab[onclick*="'${e}'"]`);a&&a.classList.add("on")}/^s[1-4]$/.test(e)&&aplicarBloqueoSemanas(),"ranking-pub"===e&&cargarRankingPublico(),"insignias"===e&&cargarInsigniasReales(),"admin"===e&&chequearAccesoAdmin(),"dashboard"===e&&cargarDashboardPublico()}async function cargarDashboardPublico(){
   if(!dbFS)return;
   try{
     const [pSnap,aSnap]=await Promise.all([
@@ -2695,6 +2740,8 @@ function avisoFueraDeCampana(){
 }
 function sumarXP(n,actividad,extra){if(!n)return;if(!campanaActiva())return void avisoFueraDeCampana();if(!participante){const e=E("xp-bar");return void(e&&(e.innerHTML='⚠️ Debes <a href="#" onclick="N(\'registro\',null);return false;" style="color:var(--az);text-decoration:underline;">registrarte</a> para que tu XP quede guardado a tu nombre',e.classList.remove("xp-pulse"),e.offsetWidth,e.classList.add("xp-pulse")))}participante.xp+=n,conteoAct[(actividad||"").split(":")[0].trim()]=((conteoAct[(actividad||"").split(":")[0].trim()]||0)+1),renderXpBar();const a=E("xp-bar");a&&(a.classList.remove("xp-pulse"),a.offsetWidth,a.classList.add("xp-pulse")),guardarXPFirebase(n,actividad,extra)}
 initFirebase();
+setTimeout(aplicarBloqueoSemanas,500);
+setInterval(aplicarBloqueoSemanas,600000);
 (function(){
   const mv=new URLSearchParams(location.search).get("mov");
   if(mv){
