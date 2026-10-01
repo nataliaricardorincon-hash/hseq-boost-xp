@@ -2172,10 +2172,24 @@ function restaurarParticipante(){
     }
   }).catch(()=>{});
 }
+function avisoXPNoGuardado(actividad,err){
+  const cod=(err&&(err.code||err.message))||"desconocido";
+  console.error("XP no guardado:",actividad,err);
+  let d=E("xp-warn");
+  if(!d){
+    d=document.createElement("div");
+    d.id="xp-warn";
+    d.style.cssText="position:fixed;left:10px;right:10px;bottom:12px;z-index:9997;background:#991b1b;color:#fff;padding:11px 13px;border-radius:12px;font-size:11px;box-shadow:0 6px 20px rgba(0,0,0,.3);";
+    document.body.appendChild(d);
+  }
+  d.innerHTML='⚠️ <strong>Tus '+actividad+' XP no se guardaron en el servidor</strong><br><span style="font-size:10px;opacity:.9;">Motivo: '+cod+' · Avisa al administrador de la campaña.</span>';
+  setTimeout(()=>{if(d)d.remove();},9000);
+}
 function guardarXPFirebase(xp,actividad,extra){
-  if(!dbFS||!participante||!participante.fid)return;
-  dbFS.collection("participantes").doc(participante.fid).update({xp:firebase.firestore.FieldValue.increment(xp)}).catch(()=>{});
-  dbFS.collection("xp_eventos").add(Object.assign({participanteId:participante.fid,participanteNombre:participante.nombre,empresa:participante.empresa,centro:participante.centro,actividad:actividad||"Actividad",xp:xp,timestamp:Date.now()},extra||{})).catch(()=>{});
+  if(!dbFS||!participante)return;
+  if(!participante.fid)return void avisoXPNoGuardado(xp,{message:"tu registro no quedó vinculado — vuelve a registrarte"});
+  dbFS.collection("participantes").doc(participante.fid).update({xp:firebase.firestore.FieldValue.increment(xp)}).catch(err=>avisoXPNoGuardado(xp,err));
+  dbFS.collection("xp_eventos").add(Object.assign({participanteId:participante.fid,participanteNombre:participante.nombre,empresa:participante.empresa,centro:participante.centro,actividad:actividad||"Actividad",xp:xp,timestamp:Date.now()},extra||{})).catch(err=>avisoXPNoGuardado(xp,err));
 }
 function campanaActiva(){const t=Date.now();return t>=MES_INICIO&&t<=MES_FIN;}
 function avisoFueraDeCampana(){
