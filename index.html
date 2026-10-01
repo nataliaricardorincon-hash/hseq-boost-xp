@@ -1262,6 +1262,8 @@ window.addEventListener("unhandledrejection",function(ev){
               <option value="rechazado">Rechazados</option>
             </select>
           </div>
+          <div id="acis-tabs" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
+          </div>
           <div style="font-size:10px;color:var(--txt2);margin-top:6px;">Cada HSEQ debe filtrar por su centro de trabajo para validar únicamente los reportes que le corresponden.</div>
         </div>
         <div class="card" style="margin-bottom:10px;">
@@ -2500,7 +2502,7 @@ async function actualizarEstadoAcis(id,estado,xpBono){
   try{
     const snap=await dbFS.collection("acis_reportes").doc(id).get();
     if(snap.exists&&"pendiente"!==(snap.data().estado||"pendiente")){alert("Otro usuario ya revisó este reporte.");cargarAcisReales();return;}
-    await dbFS.collection("acis_reportes").doc(id).update({estado,revisadoEn:Date.now()});
+    await dbFS.collection("acis_reportes").doc(id).update({estado,revisadoEn:Date.now(),revisadoPor:(sesionAdmin&&sesionAdmin.nombre)||"HSEQ"});
     if(xpBono&&rep&&rep.participanteId)otorgarXPAOtro(rep.participanteId,xpBono,"ACIS validado");
   }catch(err){console.warn(err);}
   cargarAcisReales();
@@ -2511,6 +2513,14 @@ function renderAcis(){
   const fe=(E("acis-f-estado")||{}).value||"";
   if(sesionAdmin&&"hseq"===sesionAdmin.rol&&sesionAdmin.centro)fc=sesionAdmin.centro;
   const lista=ACIS_REALES.filter(r=>(!fc||(r.centro||"—")===fc)&&(!fe||r.estado===fe));
+  const tabs=E("acis-tabs");
+  if(tabs){
+    const base=ACIS_REALES.filter(r=>!fc||(r.centro||"—")===fc);
+    const n=est=>base.filter(r=>!est||r.estado===est).length;
+    tabs.innerHTML=[["pendiente","🕐 Pendientes","var(--na)"],["validado","✅ Validados","var(--ve)"],
+                    ["rechazado","❌ Rechazados","var(--ro)"],["","📋 Todos","var(--az)"]]
+      .map(([v,l,c])=>`<button class="btn bsm" style="flex:1;min-width:110px;font-size:10px;background:${fe===v?c:"var(--bg2)"};color:${fe===v?"#fff":"var(--txt2)"};border:1px solid ${fe===v?c:"var(--b)"};font-weight:800;" onclick="E('acis-f-estado').value='${v}';renderAcis()">${l} (${n(v)})</button>`).join("");
+  }
   if(!ACIS_REALES.length){E("acis-list").innerHTML='<div class="notif na2"><div class="ni">📭</div><div class="nb"><div class="nt">Aún no hay reportes de riesgo</div><div class="nm">Aparecerán aquí cuando el personal use "Detector de Riesgos".</div></div></div>';return;}
   if(!lista.length){E("acis-list").innerHTML='<div class="notif na2"><div class="ni">✅</div><div class="nb"><div class="nt">No hay reportes con ese filtro</div><div class="nm">'+(fc?"El centro "+fc+" no tiene reportes en ese estado.":"Prueba con otro estado.")+'</div></div></div>';return;}
   const fecha=t=>{if(!t)return"—";const d=new Date(t);return d.getDate()+"/"+(d.getMonth()+1)+" "+String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");};
@@ -2527,7 +2537,9 @@ function renderAcis(){
     </div>${fotosHtml(r)}`;
   E("acis-list").innerHTML=lista.map(r=>{
     if("pendiente"!==r.estado){
-      const lbl={validado:"✅ Validado · +3 XP al reportante",con_mejora:"🔧 Con mejora registrada",rechazado:"❌ Rechazado"}[r.estado]||r.estado,
+      const quien=r.revisadoPor?" · por "+r.revisadoPor:"",
+            cuando=r.revisadoEn?" el "+fecha(r.revisadoEn):"";
+      const lbl=({validado:"✅ Validado · +3 XP al reportante",con_mejora:"🔧 Con mejora registrada",rechazado:"❌ Rechazado"}[r.estado]||r.estado)+quien+cuando,
             cls={validado:"bgv",con_mejora:"bgx",rechazado:"bgr"}[r.estado]||"bgn";
       return `<div class="card" style="margin-bottom:8px;opacity:.85;">${ficha(r)}<span class="bdg ${cls}">${lbl}</span></div>`;
     }
