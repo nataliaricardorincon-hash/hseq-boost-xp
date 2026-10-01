@@ -127,7 +127,7 @@ window.addEventListener("unhandledrejection",function(ev){
 <div id="scr-apertura" class="scr">
   <div class="hdr">
     <div class="ht" onclick="tocarLogo()" style="cursor:default;user-select:none;">❤️ <span>El Valor de Cuidarnos</span></div>
-    <div class="hs">Mi Compromiso con la Vida · 10 XP</div>
+    <div class="hs">Mi Compromiso con la Vida · 30 XP</div>
     <div class="tito-wrap"><svg width="72" height="82"><use href="#tito-svg"/></svg></div>
   </div>
   <div class="notif na2"><div class="ni">💬</div><div class="nb"><div class="nt">Tito dice: "Escanea el QR, escribe tu compromiso y toma la foto. ¡Al cierre del mes lo volverás a ver!"</div></div></div>
@@ -137,7 +137,7 @@ window.addEventListener("unhandledrejection",function(ev){
     <div class="fg"><label class="fl">Empresa</label>
       <select class="fs" id="ap-emp"><option value="">— Selecciona —</option><option value="LOG">ANAVA LOGISTICS</option><option value="TRANS">ANAVA TRANSPORT</option><option value="FZ">ANAVA FZ SERVICES</option><option value="INT">ANAVA INTERNATIONAL</option><option value="HOLD">ANAVA HOLDINGS</option><option value="3K">3K COMMODITIES</option><option value="LOGREN">LOGREN</option></select>
     </div>
-    <button class="btn bp bw" onclick="registrarApertura()">❤️ Registrar mi compromiso · 10 XP</button>
+    <button class="btn bp bw" onclick="registrarApertura()">❤️ Registrar mi compromiso · 30 XP</button>
   </div>
 </div>
 
@@ -145,7 +145,7 @@ window.addEventListener("unhandledrejection",function(ev){
 <div id="scr-simulacro" class="scr">
   <div class="hdr">
     <div class="ht" onclick="tocarLogo()" style="cursor:default;user-select:none;">🚨 <span>Preparados para Proteger</span></div>
-    <div class="hs">Simulacro Nacional ANAVA · 30 XP</div>
+    <div class="hs">Simulacro Nacional ANAVA · 100 XP</div>
     <div class="tito-wrap"><svg width="72" height="82"><use href="#tito-svg"/></svg></div>
   </div>
   <div class="card">
@@ -164,7 +164,7 @@ window.addEventListener("unhandledrejection",function(ev){
       <div id="sim-fotos-grid" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;"></div>
       <div id="sim-fotos-count" style="font-size:10px;color:var(--txt2);margin-top:4px;"></div>
     </div>
-    <button class="btn bro bw" onclick="registrarSimulacro()">🚨 Registrar participación · 30 XP</button>
+    <button class="btn bro bw" onclick="registrarSimulacro()">🚨 Registrar participación · 100 XP</button>
   </div>
 </div>
 
@@ -228,7 +228,7 @@ window.addEventListener("unhandledrejection",function(ev){
       <button type="button" class="btn bo bw" onclick="document.getElementById('det-foto-input').click()">📷 Adjuntar fotografía</button>
       <div id="det-fotos-grid" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;"></div>
     </div>
-    <button class="btn bam bw" onclick="enviarDetector()">📤 Reportar riesgo · 1 XP</button>
+    <button class="btn bam bw" onclick="enviarDetector()">📤 Reportar riesgo · 3 XP al validarlo HSEQ</button>
     <div id="det-resultado" style="margin-top:8px;"></div>
   </div>
   <div class="card week-panel" id="pan-ruletas1" style="display:none;text-align:center;">
@@ -252,7 +252,7 @@ window.addEventListener("unhandledrejection",function(ev){
       <label class="ind-chk"><input type="checkbox" class="epp-chk"> ⚙️ EPP específico de mi tarea (arnés, respirador, etc. si aplica)</label>
     </div>
     <div class="fg"><label class="fl">¿Algún EPP dañado, vencido o faltante? (opcional)</label><textarea class="fi" id="epp-obs" rows="2" placeholder="Describe qué necesitas reponer..."></textarea></div>
-    <button class="btn bam bw" onclick="enviarEppRegla()">✅ Confirmar mi EPP · Hasta 5 XP</button>
+    <button class="btn bam bw" onclick="enviarEppRegla()">✅ Confirmar mi EPP · Hasta 25 XP</button>
     <div id="epp-resultado" style="margin-top:8px;"></div>
   </div>
 </div>
@@ -395,7 +395,7 @@ window.addEventListener("unhandledrejection",function(ev){
       <button type="button" class="btn bo bw" onclick="document.getElementById('fam-foto-input').click()">📷 Adjuntar fotografía</button>
       <div id="fam-fotos-grid" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;"></div>
     </div>
-    <button class="btn bam bw" onclick="enviarFamilia()">📤 Compartir · 10 XP</button>
+    <button class="btn bam bw" onclick="enviarFamilia()">📤 Compartir · 40 XP</button>
     <div id="fam-resultado" style="margin-top:8px;"></div>
   </div>
   <div class="card week-panel" id="pan-ruta" style="display:none;">
@@ -404,7 +404,7 @@ window.addEventListener("unhandledrejection",function(ev){
       <select class="fs" id="ruta-actividad"><option value="">— Selecciona actividad —</option><option>🚶 Caminata</option><option>🏋️ Ejercicio en casa o gimnasio</option><option>🧘 Estiramientos</option><option>🧘‍♀️ Pausas activas</option><option>💧 Hidratación adecuada</option><option>🥗 Alimentación saludable</option><option>😴 Buen descanso</option></select>
     </div>
     <div class="fg"><label class="fl">Minutos dedicados (opcional)</label><input class="fi" id="ruta-minutos" type="number" min="0" placeholder="Ej: 30"></div>
-    <button class="btn bam bw" onclick="enviarRuta()">📤 Registrar · 5 XP</button>
+    <button class="btn bam bw" onclick="enviarRuta()">📤 Registrar · 10 XP</button>
     <div id="ruta-resultado" style="margin-top:8px;"></div>
   </div>
 </div>
@@ -476,7 +476,7 @@ window.addEventListener("unhandledrejection",function(ev){
     <div class="st">🌟 Compromiso SSTA Final</div>
     <label class="ind-chk"><input type="checkbox" id="comp-check"> Me comprometo a cuidar mi vida y la de mi equipo, usando siempre mi EPP y reportando lo que ponga en riesgo nuestra seguridad.</label>
     <div class="fg" style="margin-top:8px;"><label class="fl">Escribe tu compromiso personal (opcional)</label><textarea class="fi" id="comp-texto" rows="2" placeholder="Este mes me comprometo a..."></textarea></div>
-    <button class="btn bam bw" onclick="enviarCompromiso()">🌟 Renovar mi compromiso · 15 XP</button>
+    <button class="btn bam bw" onclick="enviarCompromiso()">🌟 Renovar mi compromiso · 50 XP</button>
     <div id="comp-resultado" style="margin-top:8px;"></div>
   </div>
 </div>
