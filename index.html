@@ -1252,7 +1252,7 @@ window.addEventListener("unhandledrejection",function(ev){
         </div>
         <div class="card">
           <div class="st">🤹 Fotos del Personaje Lúdico</div>
-          <div style="font-size:10px;color:var(--txt2);margin-bottom:8px;">Registros enviados por el personal. Revisa que correspondan a la actividad real.</div>
+          <div style="font-size:10px;color:var(--txt2);margin-bottom:8px;">Registros enviados por el personal. Valida solo los que correspondan a la actividad real. El botón 🗑️ elimina el registro y descuenta el XP si ya lo había recibido.</div>
           <div id="plud-list"></div>
         </div>
       </div>
@@ -3646,6 +3646,32 @@ function exportarReconocimientos(){
   a.download="HSEQ_BOOST_XP_reconocimientos_"+new Date().toISOString().slice(0,10)+".csv";
   a.click();
 }
+
+async function eliminarPersonajeLudico(id,nombre){
+  if(!sesionAdmin)return void alert("Debes iniciar sesión en el panel.");
+  if(!dbFS)return;
+  if(!confirm('Se eliminará el registro de Personaje Lúdico de "'+nombre+'".\n\nSi ya había recibido los 40 XP, se le descontarán y podrá volver a registrarse.\n\n¿Continuar?'))return;
+  try{
+    const snap=await dbFS.collection("personaje_ludico").doc(id).get();
+    if(!snap.exists)return void cargarPersonajeLudico();
+    const r=snap.data(), pid=r.participanteId;
+    if(pid){
+      const ev=await dbFS.collection("xp_eventos").where("participanteId","==",pid).where("actividad","==","Personaje Lúdico").get();
+      let xp=0;
+      ev.docs.forEach(d=>{xp+=(d.data().xp||0)});
+      if(ev.docs.length){
+        const lote=dbFS.batch();
+        ev.docs.forEach(d=>lote.delete(d.ref));
+        await lote.commit();
+      }
+      if(xp>0)await dbFS.collection("participantes").doc(pid).update({xp:firebase.firestore.FieldValue.increment(-xp)});
+    }
+    await snap.ref.delete();
+    alert("✅ Registro eliminado"+(nombre?": "+nombre:"")+".");
+    cargarPersonajeLudico();
+    if(typeof cargarDatosAdminReales==="function")cargarDatosAdminReales();
+  }catch(err){console.error(err);alert("No se pudo eliminar: "+(err&&err.message||err));}
+}
 async function validarPersonajeLudico(id,estado){
   if(!dbFS)return;
   try{
@@ -3669,7 +3695,10 @@ async function cargarPersonajeLudico(){
       const fotos=(r.fotos||[]).map(x=>`<img src="${x}" onclick="window.open(this.src)" style="width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--b);cursor:pointer;">`).join("");
       const est=r.estado||"pendiente";
       const badge={pendiente:'<span class="bdg bga">pendiente</span>',validado:'<span class="bdg bgv">✅ validado · +40 XP</span>',rechazado:'<span class="bdg bgr">❌ rechazado</span>'}[est];
-      const btns=("pendiente"===est)?`<div style="display:flex;gap:6px;margin-top:6px;"><button class="btn bp bsm" onclick="validarPersonajeLudico('${d.id}','validado')">✅ Validar (+40 XP)</button><button class="btn bro bsm" onclick="validarPersonajeLudico('${d.id}','rechazado')">❌ Rechazar</button></div>`:"";
+      const elim=`<button class="btn bro bsm" style="font-size:9px;padding:3px 7px;" onclick="eliminarPersonajeLudico('${d.id}','${(r.participanteNombre||"").replace(/'/g,"\\'")}')" title="Eliminar registro y descontar XP">🗑️</button>`;
+      const btns=("pendiente"===est)
+        ?`<div style="display:flex;gap:6px;margin-top:6px;"><button class="btn bp bsm" onclick="validarPersonajeLudico('${d.id}','validado')">✅ Validar (+40 XP)</button><button class="btn bro bsm" onclick="validarPersonajeLudico('${d.id}','rechazado')">❌ Rechazar</button>${elim}</div>`
+        :`<div style="display:flex;gap:6px;margin-top:6px;">${elim}</div>`;
       return `<div style="padding:8px 0;border-bottom:.5px solid var(--b);">
         <div style="font-size:11px;font-weight:700;">${r.participanteNombre||"—"} · ${r.centro||"—"} ${badge}</div>
         <div style="font-size:10px;color:var(--txt2);margin:2px 0;">${f}${r.descripcion?' · "'+r.descripcion+'"':""}</div>
