@@ -823,9 +823,9 @@ window.addEventListener("unhandledrejection",function(ev){
 
   <!-- PERSONAJE LÚDICO -->
   <div class="card">
-    <div class="st">🤹 Personaje Lúdico <span class="xp-tag">40 XP</span></div>
+    <div class="st">🤹 Personaje Lúdico <span class="xp-tag">40 XP al validar</span></div>
     <div style="background:#f5f3ff;border:.5px solid #ddd6fe;border-radius:8px;padding:9px;font-size:10px;color:var(--xp);margin-bottom:10px;line-height:1.5;">
-      📌 <strong>Cómo funciona:</strong> cuando el personaje lúdico visite tu operación, tómate una foto con él o de la actividad y súbela aquí. La foto es obligatoria y suma <strong>40 XP</strong> una sola vez.
+      📌 <strong>Cómo funciona:</strong> cuando el personaje lúdico visite tu operación, tómate una foto con él o de la actividad y súbela aquí. El HSEQ de tu centro la revisa y, al validarla, recibes <strong>+40 XP</strong>.
     </div>
     <div class="fg">
       <label class="fl">Fotografía de la actividad <span style="color:var(--ro);">(obligatoria)</span></label>
@@ -834,7 +834,7 @@ window.addEventListener("unhandledrejection",function(ev){
       <div id="plud-fotos-grid" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;"></div>
     </div>
     <div class="fg"><label class="fl">Cuéntanos algo de la actividad (opcional)</label><textarea class="fi" id="plud-desc" rows="2" placeholder="Ej: nos explicó la importancia del uso del cinturón..."></textarea></div>
-    <button class="btn bxp bw" onclick="enviarPersonajeLudico()">🤹 Enviar y sumar 40 XP</button>
+    <button class="btn bxp bw" onclick="enviarPersonajeLudico()">🤹 Enviar para validación</button>
     <div id="plud-resultado" style="margin-top:8px;"></div>
   </div>
 </div>
@@ -1609,6 +1609,18 @@ window.addEventListener("unhandledrejection",function(ev){
           <div id="recalc-estado" style="font-size:11px;margin-bottom:8px;"></div>
           <button class="btn bp bw" onclick="recalcularXP()">♻️ Recalcular XP de todos</button>
         </div>
+        <div class="card" style="border:2px solid var(--ro);margin-bottom:10px;">
+          <div class="st" style="color:var(--ro);">🎯 Auditar juegos ganados sin acierto</div>
+          <div style="background:#fef2f2;border:.5px solid #fecaca;border-radius:8px;padding:9px;font-size:10px;color:#991b1b;margin-bottom:10px;line-height:1.5;">
+            Antes, los juegos daban <strong>1 XP por solo participar</strong> aunque se fallara todo. Esta acción detecta esos eventos y los elimina, descontando el XP.<br>
+            Las actividades quedan liberadas para que puedan rehacerlas respondiendo bien.
+          </div>
+          <div style="display:flex;gap:6px;margin-bottom:8px;">
+            <button class="btn bo bw" onclick="auditarJuegosSinAcierto()">🔎 Revisar</button>
+            <button class="btn bro bw" onclick="revertirJuegosSinAcierto()">↩️ Revertir</button>
+          </div>
+          <div id="jsa-estado" style="font-size:11px;"></div>
+        </div>
         <div class="card" style="border:2px solid var(--ve);margin-bottom:10px;">
           <div class="st" style="color:var(--ve);">⬆️ Nivelar XP de Calidad y Seguridad Vial</div>
           <div style="background:#f0fdf4;border:.5px solid #bbf7d0;border-radius:8px;padding:9px;font-size:10px;color:#166534;margin-bottom:10px;line-height:1.5;">
@@ -2183,6 +2195,66 @@ function semanaDeActividad(a){
 let ANTICIPADOS=[];
 
 /* ===== NIVELAR XP DE CALIDAD Y PESV (12 -> 35) ===== */
+
+/* ===== AUDITAR JUEGOS GANADOS SIN ACIERTO (XP de consolación) ===== */
+const JUEGOS_AUDIT={"Trivia":1,"Verdadero o Falso":1,"Sí o No":1,"Mini Caso":1,
+  "El Error Oculto":1,"Identificar Peligros":1,"Crucigrama":2,"Memorama":4,"Sopa de letras":0};
+let JSA=[];
+async function auditarJuegosSinAcierto(){
+  if(!dbFS)return void alert("Sin conexión a la base de datos.");
+  const est=E("jsa-estado"), log=t=>{if(est)est.innerHTML=t;};
+  try{
+    log("⏳ Revisando eventos de juegos...");
+    const ev=await dbFS.collection("xp_eventos").get();
+    JSA=ev.docs.filter(d=>{
+      const v=d.data(), base=(v.actividad||"").split(":")[0].trim();
+      const umbral=JUEGOS_AUDIT[base];
+      return umbral!==undefined&&(v.xp||0)>0&&(v.xp||0)<=umbral;
+    }).map(d=>Object.assign({id:d.id,ref:d.ref},d.data()));
+    if(!JSA.length){
+      log('<div class="notif nv"><div class="ni">✅</div><div class="nb"><div class="nt">No hay juegos ganados sin acierto</div></div></div>');
+      return;
+    }
+    const porPers={};
+    JSA.forEach(v=>{
+      const k=v.participanteNombre||v.participanteId;
+      if(!porPers[k])porPers[k]={xp:0,n:0,acts:{}};
+      porPers[k].xp+=v.xp||0;porPers[k].n++;
+      const b=(v.actividad||"").split(":")[0].trim();
+      porPers[k].acts[b]=(porPers[k].acts[b]||0)+1;
+    });
+    const tot=JSA.reduce((s,v)=>s+(v.xp||0),0);
+    const filas=Object.entries(porPers).sort((a,b)=>b[1].n-a[1].n).map(([n,d])=>
+      `<tr><td style="font-weight:700;font-size:11px;">${n}</td><td style="font-weight:800;color:var(--ro);">${d.n}</td><td style="color:var(--xp);font-weight:800;">${d.xp} XP</td><td style="font-size:9px;color:var(--txt2);">${Object.entries(d.acts).map(([a,c])=>a+" ×"+c).join(", ")}</td></tr>`).join("");
+    log('<div class="notif ny" style="margin-bottom:8px;"><div class="ni">🎯</div><div class="nb"><div class="nt">'+Object.keys(porPers).length+' persona(s) con juegos sin acierto</div><div class="nm">'+JSA.length+' evento(s) · <strong>'+tot+' XP</strong> a descontar.</div></div></div>'
+      +'<div style="max-height:340px;overflow-y:auto;"><table class="tbl"><thead><tr><th>Participante</th><th>Juegos</th><th>XP</th><th>Detalle</th></tr></thead><tbody>'+filas+'</tbody></table></div>');
+  }catch(err){console.error(err);log('<div class="notif ny"><div class="ni">⚠️</div><div class="nb"><div class="nt">Error</div><div class="nm">'+(err&&err.message||err)+'</div></div></div>');}
+}
+async function revertirJuegosSinAcierto(){
+  if(!sesionAdmin||"general"!==sesionAdmin.rol)return void alert("Solo el administrador general puede revertir XP.");
+  if(!JSA.length)return void alert("Primero toca «Revisar».");
+  const porPart={};
+  JSA.forEach(v=>{if(v.participanteId)porPart[v.participanteId]=(porPart[v.participanteId]||0)+(v.xp||0);});
+  const tot=Object.values(porPart).reduce((a,b)=>a+b,0);
+  if(!confirm("Se eliminarán "+JSA.length+" evento(s) y se descontarán "+tot+" XP a "+Object.keys(porPart).length+" participante(s).\n\nPodrán rehacer esos juegos respondiendo correctamente.\n\n¿Continuar?"))return;
+  const est=E("jsa-estado"), log=t=>{if(est)est.innerHTML=t;};
+  try{
+    for(let i=0;i<JSA.length;i+=400){
+      const lote=dbFS.batch();
+      JSA.slice(i,i+400).forEach(v=>lote.delete(v.ref));
+      await lote.commit();
+    }
+    const ids=Object.keys(porPart);
+    for(let i=0;i<ids.length;i+=300){
+      const lote=dbFS.batch();
+      ids.slice(i,i+300).forEach(id=>lote.update(dbFS.collection("participantes").doc(id),{xp:firebase.firestore.FieldValue.increment(-porPart[id])}));
+      await lote.commit();
+    }
+    log('<div class="notif nv"><div class="ni">↩️</div><div class="nb"><div class="nt">XP revertido</div><div class="nm">'+tot+' XP descontados a '+ids.length+' participante(s). Los juegos quedan disponibles para rehacerlos.</div></div></div>');
+    JSA=[];completadasSet=new Set();
+    await cargarDatosAdminReales();renderU();renderEmps();
+  }catch(err){console.error(err);log('<div class="notif ny"><div class="ni">⚠️</div><div class="nb"><div class="nt">Error</div><div class="nm">'+(err&&err.message||err)+'</div></div></div>');}
+}
 async function nivelarCalidadPesv(){
   if(!sesionAdmin||"general"!==sesionAdmin.rol)return void alert("Solo el administrador general puede ejecutar esta acción.");
   if(!dbFS)return void alert("Sin conexión a la base de datos.");
@@ -3467,13 +3539,12 @@ async function enviarPersonajeLudico(){
     dbFS.collection("personaje_ludico").add({
       participanteId:participante.fid, participanteNombre:participante.nombre,
       empresa:participante.empresa, centro:participante.centro,
-      descripcion:desc, fotos, timestamp:Date.now()
+      descripcion:desc, fotos, estado:"pendiente", timestamp:Date.now()
     }).catch(err=>console.warn(err));
   }
   marcarCompletado("Personaje Lúdico");
-  res.innerHTML='<div class="notif nv"><div class="ni">🤹</div><div class="nb"><div class="nt">¡Registrado! +40 XP</div><div class="nm">Gracias por participar. Tu foto quedó registrada para el HSEQ de tu centro.</div></div></div>';
+  res.innerHTML='<div class="notif nv"><div class="ni">🤹</div><div class="nb"><div class="nt">¡Registro enviado!</div><div class="nm">El HSEQ de tu centro revisará tu foto. Cuando la valide recibirás <strong>+40 XP</strong>.</div></div></div>';
   E("plud-desc").value=""; fotosGen.plud=[]; renderFotosGen("plud");
-  sumarXP(40,"Personaje Lúdico");
 }
 
 /* ===== ADMIN: ACTIVIDADES PRESENCIALES ===== */
@@ -3568,6 +3639,18 @@ function exportarReconocimientos(){
   a.download="HSEQ_BOOST_XP_reconocimientos_"+new Date().toISOString().slice(0,10)+".csv";
   a.click();
 }
+async function validarPersonajeLudico(id,estado){
+  if(!dbFS)return;
+  try{
+    const snap=await dbFS.collection("personaje_ludico").doc(id).get();
+    if(!snap.exists)return;
+    const r=snap.data();
+    if("pendiente"!==(r.estado||"pendiente")){alert("Este registro ya fue revisado.");cargarPersonajeLudico();return;}
+    await snap.ref.update({estado,revisadoEn:Date.now(),revisadoPor:(sesionAdmin&&sesionAdmin.nombre)||"HSEQ"});
+    if("validado"===estado&&r.participanteId)otorgarXPAOtro(r.participanteId,40,"Personaje Lúdico");
+    cargarPersonajeLudico();
+  }catch(err){console.error(err);alert("No se pudo actualizar: "+(err&&err.message||err));}
+}
 async function cargarPersonajeLudico(){
   if(!E("plud-list")||!dbFS)return;
   try{
@@ -3577,10 +3660,13 @@ async function cargarPersonajeLudico(){
     E("plud-list").innerHTML=docs.length?docs.map(d=>{
       const r=d.data(), f=new Date(r.timestamp).toLocaleDateString("es-CO",{day:"2-digit",month:"2-digit"});
       const fotos=(r.fotos||[]).map(x=>`<img src="${x}" onclick="window.open(this.src)" style="width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--b);cursor:pointer;">`).join("");
+      const est=r.estado||"pendiente";
+      const badge={pendiente:'<span class="bdg bga">pendiente</span>',validado:'<span class="bdg bgv">✅ validado · +40 XP</span>',rechazado:'<span class="bdg bgr">❌ rechazado</span>'}[est];
+      const btns=("pendiente"===est)?`<div style="display:flex;gap:6px;margin-top:6px;"><button class="btn bp bsm" onclick="validarPersonajeLudico('${d.id}','validado')">✅ Validar (+40 XP)</button><button class="btn bro bsm" onclick="validarPersonajeLudico('${d.id}','rechazado')">❌ Rechazar</button></div>`:"";
       return `<div style="padding:8px 0;border-bottom:.5px solid var(--b);">
-        <div style="font-size:11px;font-weight:700;">${r.participanteNombre||"—"} · ${r.centro||"—"}</div>
+        <div style="font-size:11px;font-weight:700;">${r.participanteNombre||"—"} · ${r.centro||"—"} ${badge}</div>
         <div style="font-size:10px;color:var(--txt2);margin:2px 0;">${f}${r.descripcion?' · "'+r.descripcion+'"':""}</div>
-        ${fotos?`<div style="display:flex;gap:5px;margin-top:4px;flex-wrap:wrap;">${fotos}</div>`:""}</div>`;
+        ${fotos?`<div style="display:flex;gap:5px;margin-top:4px;flex-wrap:wrap;">${fotos}</div>`:""}${btns}</div>`;
     }).join(""):'<div class="notif na2"><div class="ni">📭</div><div class="nb"><div class="nt">Aún no hay registros del personaje lúdico</div></div></div>';
   }catch(err){console.warn(err);}
 }
