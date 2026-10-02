@@ -3617,6 +3617,13 @@ function enviarReconocimiento(){
     return;
   }
   const quedan=restantes("Tarjeta Gracias");
+  if(dbFS&&participante&&participante.fid){
+    dbFS.collection("reconocimientos").add({
+      deId:participante.fid, deNombre:participante.nombre,
+      deEmpresa:participante.empresa, deCentro:participante.centro,
+      paraNombre:e, motivo:a, timestamp:Date.now()
+    }).catch(err=>console.warn("reconocimiento:",err));
+  }
   E("reco-nombre").value="";E("reco-motivo").value="";
   E("reconocimiento-resultado").innerHTML='<div class="notif nv"><div class="ni">💛</div><div class="nb"><div class="nt">¡Reconocimiento enviado a '+e+'! +10 XP para ti</div><div class="nm">Tu compañero será notificado. Te quedan <strong>'+Math.max(0,(quedan||1)-1)+'</strong> reconocimiento(s) con XP este mes.</div></div></div>';
   if(dbFS&&participante&&participante.fid){
