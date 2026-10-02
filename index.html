@@ -1244,7 +1244,8 @@ window.addEventListener("unhandledrejection",function(ev){
           </select></div>
           <div class="fg"><label class="fl">Centro de trabajo</label><select class="fs" id="mov-centro"></select></div>
           <button class="btn bp bw" onclick="generarCodigoMovilidad()">🚦 Generar código y QR</button>
-          <button class="btn bo bw" style="margin-top:6px;" onclick="generarMovilidadTodosCentros()">🏢 Generar un código para TODOS los centros</button>
+          <button class="btn bo bw" style="margin-top:6px;" onclick="generarMovilidadUnico()">🌐 Un solo código válido en TODOS los centros</button>
+          <button class="btn bo bw" style="margin-top:6px;" onclick="generarMovilidadTodosCentros()">🏢 Un código distinto por cada centro</button>
           <div id="mov-qr-resultado" style="margin-top:10px;"></div>
         </div>
         <div class="card" style="margin-bottom:10px;">
@@ -3570,6 +3571,8 @@ async function canjearMovilidad(){
     if(snap.empty)return av("🚫 Este código no es válido · No corresponde a ninguna actividad de Movilidad generada por el equipo HSEQ. Solo sirve el código que entrega quien dirige la actividad, después de participar.");
     const doc=snap.docs[0], a=doc.data();
     if(!a.activo)return av("Este código ya fue cerrado por el facilitador.");
+    if(!a.todosLosCentros&&a.centro&&participante.centro&&a.centro!==participante.centro)
+      return av("🚫 Este código corresponde a la actividad de "+a.centro+". Pide el código de tu propio centro a quien dirige la actividad.");
     await doc.ref.update({usos:(a.usos||0)+1});
     marcarCompletado("Movilidad");
     const modal=a.modalidad||"Movilidad";
@@ -3623,6 +3626,26 @@ async function generarCodigoMovilidad(){
 }
 
 /* Genera un código de Movilidad por cada centro de trabajo, de una sola vez */
+
+/* Un único código de Movilidad que sirve en cualquier centro */
+async function generarMovilidadUnico(){
+  if(!sesionAdmin||"general"!==sesionAdmin.rol)return void alert("Solo el administrador general puede generar este código.");
+  if(!dbFS)return void alert("Sin conexión a la base de datos.");
+  const modalidad=E("mov-modalidad").value;
+  if(!confirm("Se generará UN SOLO código de Movilidad ("+modalidad+") válido en todos los centros de trabajo.\n\nCualquier persona que lo reciba podrá canjearlo, sin importar su centro.\n\n¿Continuar?"))return;
+  const codigo="MOV-ALL-"+Math.random().toString(36).substr(2,4).toUpperCase();
+  try{
+    await dbFS.collection("actividades_presenciales").add({tipo:"movilidad",codigo,modalidad,centro:"",todosLosCentros:true,xp:60,usos:0,activo:true,creado:Date.now()});
+    const url="https://nataliaricardorincon-hash.github.io/hseq-boost-xp/?mov="+encodeURIComponent(codigo),
+          qrImg="https://api.qrserver.com/v1/create-qr-code/?size=240x240&data="+encodeURIComponent(url);
+    E("mov-qr-resultado").innerHTML=`<div class="notif nv" style="flex-direction:column;align-items:center;text-align:center;padding:14px;">
+      <img src="${qrImg}" style="width:200px;height:200px;border-radius:8px;margin-bottom:8px;" alt="QR Movilidad">
+      <div style="font-family:monospace;font-weight:800;font-size:17px;color:var(--az);">${codigo}</div>
+      <div style="font-size:11px;color:var(--txt2);margin-top:4px;"><strong>${modalidad}</strong> · válido en todos los centros · 60 XP</div>
+      <div style="font-size:10px;color:var(--txt2);margin-top:6px;">Comparte este QR solo con quienes ya participaron en la actividad. Ciérralo cuando termine la jornada en todos los centros.</div></div>`;
+    cargarCodigosMovilidad();
+  }catch(err){console.error(err);alert("No se pudo generar: "+(err&&err.message||err));}
+}
 async function generarMovilidadTodosCentros(){
   if(!sesionAdmin||"general"!==sesionAdmin.rol)return void alert("Solo el administrador general puede generar códigos masivos.");
   if(!dbFS)return void alert("Sin conexión a la base de datos.");
@@ -3662,7 +3685,7 @@ async function cargarCodigosMovilidad(){
     const docs=snap.docs.filter(d=>!fijo||d.data().centro===fijo);
     E("mov-tbody").innerHTML=docs.length?docs.map(d=>{
       const a=d.data();
-      return `<tr><td style="font-family:monospace;font-size:10px;">${a.codigo}</td><td style="font-size:10px;">${a.modalidad||"—"}</td><td style="font-size:10px;">${a.centro||"—"}</td><td><strong>${a.usos||0}</strong></td>
+      return `<tr><td style="font-family:monospace;font-size:10px;">${a.codigo}</td><td style="font-size:10px;">${a.modalidad||"—"}</td><td style="font-size:10px;">${a.todosLosCentros?"<strong>Todos los centros</strong>":(a.centro||"—")}</td><td><strong>${a.usos||0}</strong></td>
       <td style="white-space:nowrap;">${a.activo?`<button class="btn bo bsm" style="font-size:9px;padding:3px 6px;" onclick="cerrarCodigoMovilidad('${d.id}')">Cerrar</button> `:'<span class="bdg bgn">cerrado</span> '}<button class="btn bro bsm" style="font-size:9px;padding:3px 6px;" onclick="eliminarCodigoMovilidad('${d.id}','${a.codigo}')" title="Eliminar">🗑️</button></td></tr>`;
     }).join(""):'<tr><td colspan="5" style="text-align:center;color:var(--txt2);font-size:11px;padding:10px;">Aún no se ha generado ningún código</td></tr>';
   }catch(err){console.warn(err);}
