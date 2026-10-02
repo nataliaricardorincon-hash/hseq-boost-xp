@@ -160,8 +160,8 @@ window.addEventListener("unhandledrejection",function(ev){
   </div>
   <div class="notif na2"><div class="ni">💬</div><div class="nb"><div class="nt">Tito dice: "Escribe tu compromiso y toma la foto. ¡Al cierre del mes lo volverás a ver!"</div></div></div>
   <div class="card">
-    <div class="fg"><label class="fl">¿Para quién te cuidas?</label><input class="fi" id="ap-quien" placeholder="Nombre de quien te espera en casa..."></div>
-    <div class="fg"><label class="fl">Mi compromiso SSTA este mes</label><textarea class="fi" id="ap-texto" rows="3" placeholder="Me comprometo a..."></textarea></div>
+    <div class="fg"><label class="fl">¿Para quién te cuidas?</label><input class="fi" placeholder="Nombre de quien te espera en casa..."></div>
+    <div class="fg"><label class="fl">Mi compromiso SSTA este mes</label><textarea class="fi" rows="3" placeholder="Me comprometo a..."></textarea></div>
     <div class="fg"><label class="fl">Empresa</label>
       <select class="fs" id="ap-emp"><option value="">— Selecciona —</option><option value="LOG">ANAVA LOGISTICS</option><option value="TRANS">ANAVA TRANSPORT</option><option value="FZ">ANAVA FZ SERVICES</option><option value="INT">ANAVA INTERNATIONAL</option><option value="HOLD">ANAVA HOLDINGS</option><option value="3K">3K COMMODITIES</option><option value="LOGREN">LOGREN</option></select>
     </div>
@@ -1087,18 +1087,6 @@ window.addEventListener("unhandledrejection",function(ev){
       <!-- PANEL GENERAL -->
       <div id="ap-overview" class="ap on">
         <div style="font-size:13px;font-weight:800;color:var(--az);margin-bottom:10px;">📊 Panel general</div>
-        <!-- CONTROL DE SUSPENSIÓN DE ACCESO (solo admin general) -->
-        <div id="ctrl-acceso" class="card" style="display:none;margin-bottom:10px;border:1.5px solid var(--ro);">
-          <div style="font-size:12px;font-weight:800;color:var(--ro);margin-bottom:6px;">🛑 Suspensión temporal de acceso</div>
-          <div id="ctrl-acceso-estado" style="font-size:11px;margin-bottom:8px;"></div>
-          <div style="font-size:10px;font-weight:700;margin-bottom:3px;">Reactivación automática (fecha y hora)</div>
-          <input type="datetime-local" id="ctrl-acceso-hasta" class="fi" value="2026-10-05T06:00" style="margin-bottom:6px;">
-          <textarea class="fi" id="ctrl-acceso-msg" rows="3" placeholder="Mensaje para el personal (opcional; si lo dejas vacío se muestra el mensaje predeterminado)"></textarea>
-          <div style="display:flex;gap:6px;margin-top:6px;">
-            <button class="btn bw" style="background:var(--ro);color:#fff;" onclick="suspenderAcceso()">🛑 Suspender acceso</button>
-            <button class="btn bw" style="background:var(--ve);color:#fff;" onclick="reactivarAcceso()">✅ Reactivar ahora</button>
-          </div>
-        </div>
         <div class="g4" style="margin-bottom:10px;">
           <div class="kpi"><div class="kpi-n" id="ov-reg" style="color:var(--az);">0</div><div class="kpi-l">Registrados</div></div>
           <div class="kpi"><div class="kpi-n" id="ov-act" style="color:var(--ve);">0</div><div class="kpi-l">Activos</div></div>
@@ -2109,7 +2097,7 @@ function tocarLogo(){
 /* ===== CONTROL DE ACCESO POR ROLES ===== */
 const CLAVES={
   /* --- Administración general: acceso total --- */
-  /* La clave general NO se guarda aquí: solo su huella cifrada (ver HASH_GENERAL) */
+  "ANAVA-GNRL-2026":{rol:"general", nombre:"Administrador General", badge:"🔐 Admin General", centro:null},
   /* --- Una clave por centro de trabajo. Solo Validar ACIS, Simulacro y Reportes, y únicamente de su centro. --- */
   "HSEQ-ADAMA-2026":{rol:"hseq", nombre:"HSEQ Adama", badge:"🦺 HSEQ", centro:"ADAMA"},
   "HSEQ-CARVAJAL-2026":{rol:"hseq", nombre:"HSEQ Bodega Carvajal", badge:"🦺 HSEQ", centro:"BODEGA CARVAJAL"},
@@ -2142,39 +2130,10 @@ const PERMISOS={
   general:["overview","usuarios","empresas","actividades","juegos-a","xp-cfg","qr","presencial","valida","reconoc","acis","simu","notif","reportes","config","arq"],
   hseq:["presencial","valida","reconoc","acis","simu","reportes"]
 };
-/* ===== CLAVE GENERAL CIFRADA (SHA-256) ===== */
-const HASH_GENERAL="8f5864912342b4dcf38b4d59a800d7692180c1b1873662be9ea3a4e68a8e2319";
-const USUARIO_GENERAL={rol:"general", nombre:"Administrador General", badge:"🔐 Admin General", centro:null};
-function sha256Hex(txt){
-  /* Implementación local para que funcione en cualquier navegador */
-  const K=[1116352408,1899447441,3049323471,3921009573,961987163,1508970993,2453635748,2870763221,3624381080,310598401,607225278,1426881987,1925078388,2162078206,2614888103,3248222580,3835390401,4022224774,264347078,604807628,770255983,1249150122,1555081692,1996064986,2554220882,2821834349,2952996808,3210313671,3336571891,3584528711,113926993,338241895,666307205,773529912,1294757372,1396182291,1695183700,1986661051,2177026350,2456956037,2730485921,2820302411,3259730800,3345764771,3516065817,3600352804,4094571909,275423344,430227734,506948616,659060556,883997877,958139571,1322822218,1537002063,1747873779,1955562222,2024104815,2227730452,2361852424,2428436474,2756734187,3204031479,3329325298];
-  const b=Array.from(new TextEncoder().encode(txt)),l=b.length*8;
-  b.push(128);while(b.length%64!==56)b.push(0);
-  for(let i=7;i>=0;i--)b.push(i>3?0:(l>>>(i*8))&255);
-  let H=[1779033703,3144134277,1013904242,2773480762,1359893119,2600822924,528734635,1541459225];
-  const r=(x,n)=>(x>>>n)|(x<<(32-n));
-  for(let o=0;o<b.length;o+=64){
-    const w=new Array(64);
-    for(let i=0;i<16;i++)w[i]=(b[o+i*4]<<24)|(b[o+i*4+1]<<16)|(b[o+i*4+2]<<8)|b[o+i*4+3];
-    for(let i=16;i<64;i++){const s0=r(w[i-15],7)^r(w[i-15],18)^(w[i-15]>>>3),s1=r(w[i-2],17)^r(w[i-2],19)^(w[i-2]>>>10);w[i]=(w[i-16]+s0+w[i-7]+s1)|0;}
-    let [a,c,d,e,f,g,h,k]=H;
-    for(let i=0;i<64;i++){
-      const t1=(k+(r(f,6)^r(f,11)^r(f,25))+((f&g)^(~f&h))+K[i]+w[i])|0,t2=((r(a,2)^r(a,13)^r(a,22))+((a&c)^(a&d)^(c&d)))|0;
-      k=h;h=g;g=f;f=(e+t1)|0;e=d;d=c;c=a;a=(t1+t2)|0;
-    }
-    H=H.map((v,i)=>(v+[a,c,d,e,f,g,h,k][i])|0);
-  }
-  return H.map(v=>(v>>>0).toString(16).padStart(8,"0")).join("");
-}
-function resolverClave(p){
-  if(!p)return null;
-  if(CLAVES[p])return CLAVES[p];
-  return sha256Hex(p)===HASH_GENERAL?USUARIO_GENERAL:null;
-}
 let sesionAdmin=null;
 
 function verificarPinAdmin(){
-  const p=E("admin-pin").value.trim().toUpperCase(),u=resolverClave(p);
+  const p=E("admin-pin").value.trim().toUpperCase(),u=CLAVES[p];
   if(!u){E("admin-pin-error").textContent="⚠️ Clave incorrecta";return;}
   sesionAdmin=u;
   sesSet("admin_sesion",JSON.stringify(u));
@@ -3148,10 +3107,15 @@ async function cargarAcisReales(){
   }
   renderAcis();
 }
-function otorgarXPAOtro(participanteId,xp,actividad){
+async function otorgarXPAOtro(participanteId,xp,actividad){
   if(!dbFS||!participanteId)return;
+  let datos={};
+  try{
+    const p=await dbFS.collection("participantes").doc(participanteId).get();
+    if(p.exists){const d=p.data();datos={participanteNombre:d.nombre||"",empresa:d.empresa||"",centro:d.centro||""};}
+  }catch(e){}
   dbFS.collection("participantes").doc(participanteId).update({xp:firebase.firestore.FieldValue.increment(xp)}).catch(()=>{});
-  dbFS.collection("xp_eventos").add({participanteId,actividad,xp,timestamp:Date.now()}).catch(()=>{});
+  dbFS.collection("xp_eventos").add(Object.assign({participanteId,actividad,xp,timestamp:Date.now()},datos)).catch(()=>{});
 }
 async function actualizarEstadoAcis(id,estado,xpBono){
   if(!dbFS)return;
@@ -4439,111 +4403,5 @@ function renderInsignias(acts,xp){acts=acts||[];xp=xp||0;E("insignias-grid")&&(E
       <div style="font-size:9px;color:#64748b;margin-top:3px;line-height:1.3;">${d?"✅ Obtenida":"🔒 "+e.desc}</div>
     </div>`}).join(""))}
 let repInit=!1;function chkAll(e){document.querySelectorAll("#ind-list input").forEach(a=>a.checked=e)}function exp(e){E("exp-msg")&&(E("exp-msg").textContent="✅ Exportando "+e+"... El archivo estará listo en unos segundos.",E("exp-ok").style.display="flex",setTimeout(()=>E("exp-ok").style.display="none",3500))}function filtSin(){if(!E("sin-search"))return;const e=E("sin-search").value.toLowerCase();sinF=SIN_USERS.filter(a=>!e||a.n.toLowerCase().includes(e)),renderSin()}function renderSin(){E("sin-count-txt")&&(E("sin-count-txt").textContent=sinF.length+" usuarios sin participación");E("sin-tbody")&&(E("sin-tbody").innerHTML=sinF.map(e=>`<tr><td style="font-weight:700;">${e.n}</td><td style="font-size:10px;">${e.emp}</td><td style="font-size:10px;">${e.ct}</td><td><span class="bdg bgr" style="font-size:9px;">${e.ul}</span></td><td><button class="btn bo bsm" onclick="alert('📲 Recordatorio enviado a ${e.n}')">🔔</button></td></tr>`).join(""))}function rP(e){if("diaria"===e){if(!E("hora-chart"))return;const e=Math.max(...HORAS);E("hora-chart").innerHTML=HORAS.map((a,r)=>`<div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex:1;"><div style="font-size:8px;font-weight:800;color:var(--az);">${a||""}</div><div style="width:100%;border-radius:2px 2px 0 0;height:${Math.max(a/e*60,2)}px;background:${a>50?"var(--ve)":a>20?"var(--az)":"#cbd5e1"}"></div><div style="font-size:7px;color:var(--txt2);">${r}</div></div>`).join("");const a=Math.max(...DIAS30);E("dias-chart").innerHTML=DIAS30.map((e,r)=>`<div class="day-col"><div class="day-bar" style="height:${Math.max(e/a*60,2)}px;background:${e>80?"var(--ve)":e>50?"var(--az)":"var(--am)"};"></div><div class="day-lbl">${r+1}</div></div>`).join("")}else if("semanal"===e){if(!E("sem-chart"))return;const e=Math.max(...SEM.map(e=>e.p));E("sem-chart").innerHTML=SEM.map(a=>`<div class="bar-row"><div class="bar-lbl" style="width:70px;">${a.s}</div><div class="bar-track"><div class="bar-fill" style="width:${a.p?a.p/e*100:2}%;background:${a.p?"var(--az)":"#cbd5e1"};">${a.p||"—"}</div></div><div class="bar-val">${a.p||"—"}</div></div>`).join(""),E("sem-tabla").innerHTML=SEM.map(e=>`<tr><td>${e.s}</td><td>${e.p||"—"}</td><td>${e.xp?e.xp.toLocaleString()+" XP":"—"}</td><td>${e.p?Math.round(e.p/248*100)+"%":"—"}</td></tr>`).join("")}else if("mensual"===e){if(!E("emp-bars"))return;const e=Math.max(...EMPS_D.map(e=>e.pct));E("emp-bars").innerHTML=EMPS_D.map(a=>`<div class="bar-row"><div class="bar-lbl" style="width:45px;font-size:9px;">${a.n.split(" ").pop()}</div><div class="bar-track"><div class="bar-fill" style="width:${a.pct/e*100}%;background:${a.pct>=85?"var(--ve)":a.pct>=70?"var(--az)":"var(--am)"};">${a.pct}%</div></div></div>`).join(""),E("ct-bars").innerHTML=TOP5CT.map(e=>`<div class="bar-row"><div class="bar-lbl" style="width:95px;font-size:9px;">${e.n.slice(0,15)}</div><div class="bar-track"><div class="bar-fill" style="width:${e.pct}%;background:var(--ve);">${e.pct}%</div></div></div>`).join(""),E("mens-tabla").innerHTML=EMPS_D.map(e=>`<tr><td style="font-size:10px;">${e.n}</td><td>${e.reg}</td><td>${e.act}</td><td><span class="bdg ${e.pct>=80?"bgv":e.pct>=60?"bga":"bgy"}">${e.pct}%</span></td><td>${e.xp} XP</td><td>${e.acis}</td></tr>`).join("")}else if("actividades"===e){if(!E("act-rank-bars"))return;const e=Math.max(...ACT_R.map(e=>e.c));E("act-rank-bars").innerHTML=ACT_R.map((a,r)=>`<div class="bar-row"><div class="bar-lbl" style="width:115px;font-size:9px;">${a.n}</div><div class="bar-track"><div class="bar-fill" style="width:${a.c/e*100}%;background:${["var(--am)","var(--az)","var(--ve)","var(--xp)","var(--na)","var(--ro)"][r]};${0===r?"color:var(--az)":""};">${a.c}</div></div></div>`).join("");const a=Math.max(...JUE_R.map(e=>e.c));E("juego-bars").innerHTML=JUE_R.map(e=>`<div class="bar-row"><div class="bar-lbl" style="width:115px;font-size:9px;">${e.n}</div><div class="bar-track"><div class="bar-fill" style="width:${e.c/a*100}%;background:var(--xp);">${e.c}</div></div></div>`).join("")}else if("sinpart"===e)renderSin();else if("ranking"===e){if(!E("podium"))return;E("podium").innerHTML=TOP20.length<3?'<div class="notif na2" style="width:100%;"><div class="ni">📭</div><div class="nb"><div class="nt">Aún no hay participantes para el podio</div></div></div>':`<div class="pod-item"><div class="pod-bar" style="height:70px;background:var(--az);">2°</div><div class="pod-lbl">${TOP20[1].n}</div><div class="pod-xp">${TOP20[1].xp} XP</div></div><div class="pod-item"><div class="pod-bar" style="height:100px;background:var(--am);color:var(--az);">🏆 1°</div><div class="pod-lbl">${TOP20[0].n}</div><div class="pod-xp">${TOP20[0].xp} XP</div></div><div class="pod-item"><div class="pod-bar" style="height:55px;background:var(--na);">3°</div><div class="pod-lbl">${TOP20[2].n}</div><div class="pod-xp">${TOP20[2].xp} XP</div></div>`;const e=["r1","r2","r3"];E("top20").innerHTML=TOP20.length?TOP20.map((a,r)=>`<div class="rank-item"><div class="rpos ${e[r]||"rn"}">${r+1}</div><div style="flex:1;"><div style="font-size:11px;font-weight:700;">${a.n}</div><div style="font-size:9px;color:var(--txt2);">${a.e}</div></div><span style="color:var(--xp);font-size:11px;font-weight:800;">${a.xp}</span></div>`).join(""):'<div class="notif na2"><div class="ni">📭</div><div class="nb"><div class="nt">Aún no hay participantes registrados</div></div></div>',E("emp-rank").innerHTML=EMPS_D.map((a,r)=>`<div class="rank-item"><div class="rpos ${e[r]||"rn"}">${r+1}</div><div style="flex:1;font-size:11px;font-weight:700;">${a.n.split(" ").pop()}</div><span style="color:var(--xp);font-size:11px;font-weight:800;">${10*(a.xp*a.reg/10|0)}</span></div>`).join("")}else if("acis-r"===e){if(!E("acis-emp-bars"))return;cargarAcisReales()}else if("hallazgos"===e){if(!E("hall-bars"))return;if(!HALL.length){E("hall-bars").innerHTML='<div class="notif na2"><div class="ni">📭</div><div class="nb"><div class="nt">Aún no hay hallazgos registrados</div></div></div>';return}const e=Math.max(1,...HALL.map(e=>e.n));E("hall-bars").innerHTML=HALL.map(a=>`<div style="margin-bottom:8px;"><div style="font-size:10px;font-weight:700;color:var(--az);margin-bottom:3px;">${a.cat}</div><div class="bar-track"><div class="bar-fill" style="width:${a.n/e*100}%;background:${a.n>=12?"var(--ro)":a.n>=7?"var(--am)":"var(--ve)"};">${a.n} hallazgos</div></div></div>`).join("")}else if("tendencias"===e){if(!E("tend-up"))return;E("tend-up").innerHTML='<div class="notif na2"><div class="ni">📭</div><div class="nb"><div class="nt">Aún no hay suficientes datos para medir tendencias</div></div></div>',E("tend-down").innerHTML='<div class="notif na2"><div class="ni">📭</div><div class="nb"><div class="nt">Aún no hay suficientes datos para medir tendencias</div></div></div>';const e=Math.max(1,...SEM.map(e=>e.p));E("tend-sem").innerHTML=SEM.map(a=>`<div class="bar-row"><div class="bar-lbl" style="width:65px;">${a.s}</div><div class="bar-track"><div class="bar-fill" style="width:${a.p?a.p/e*100:3}%;background:${a.p?"var(--xp)":"#cbd5e1"};">${a.p||"—"}</div></div><div class="bar-val">${a.p||"—"}</div></div>`).join("")}else"exportar"===e&&E("ind-list")&&""===E("ind-list").innerHTML&&(E("ind-list").innerHTML=INDS.map(e=>`<label class="ind-chk"><input type="checkbox" checked> ${e}</label>`).join(""))}E("ind-list")&&(E("ind-list").innerHTML=INDS.map(e=>`<label class="ind-chk"><input type="checkbox" checked> ${e}</label>`).join(""));</script>
-
-<!-- ===== SUSPENSIÓN TEMPORAL DE ACCESO ===== -->
-<div id="susp-overlay" style="display:none;position:fixed;inset:0;z-index:99999;background:linear-gradient(160deg,#003D7A,#005BAA);color:#fff;overflow:auto;">
-  <div style="max-width:420px;margin:0 auto;padding:60px 24px;text-align:center;">
-    <div style="font-size:48px;">🛠️</div>
-    <div style="font-size:20px;font-weight:800;margin:10px 0;">HSEQ BOOST XP está temporalmente suspendida</div>
-    <div id="susp-msg" style="font-size:13px;opacity:.92;line-height:1.5;"></div>
-    <div id="susp-hasta" style="margin-top:14px;background:rgba(255,255,255,.14);border-radius:10px;padding:10px;font-size:13px;font-weight:700;"></div>
-    <div style="margin-top:18px;font-size:12px;font-weight:700;color:#FFB800;">Activa tu ADN. Aprende, participa y suma de manera correcta.</div>
-    <div style="margin-top:40px;">
-      <a href="#" onclick="E('susp-admin').style.display='block';this.style.display='none';return false;" style="color:rgba(255,255,255,.5);font-size:10px;">Acceso administrador</a>
-      <div id="susp-admin" style="display:none;margin-top:8px;">
-        <input type="password" id="susp-pin" class="fi" placeholder="Clave de administrador general" style="text-align:center;margin-bottom:6px;color:#1e293b;" onkeydown="if(event.key==='Enter')entrarAdminSuspension()">
-        <button class="btn bpa bw" onclick="entrarAdminSuspension()">Entrar</button>
-        <div id="susp-pin-err" style="color:#fecaca;font-size:10px;margin-top:6px;"></div>
-      </div>
-    </div>
-  </div>
-</div>
-<script>
-/* Estado guardado en Firestore: config/acceso {suspendido, hasta, mensaje} */
-let ESTADO_ACCESO={suspendido:false,hasta:0,mensaje:""};
-const MSG_SUSP_DEF="Estamos realizando ajustes y reforzando los controles de la plataforma para garantizar una participación justa para todos. Los puntos se reiniciaron y todos empezamos de nuevo en igualdad de condiciones.";
-function accesoSuspendido(){return !!(ESTADO_ACCESO.suspendido&&Date.now()<ESTADO_ACCESO.hasta);}
-function fmtFechaHora(ms){try{return new Date(ms).toLocaleString("es-CO",{weekday:"long",day:"numeric",month:"long",hour:"numeric",minute:"2-digit"});}catch(e){return new Date(ms).toString();}}
-function restaurarSesionAdmin(){
-  if(sesionAdmin)return;
-  const raw=sesGet("admin_sesion");
-  if(raw){try{sesionAdmin=JSON.parse(raw);}catch(e){sesionAdmin=null;}}
-}
-function aplicarSuspension(){
-  restaurarSesionAdmin();
-  const ov=E("susp-overlay");if(!ov)return;
-  if(accesoSuspendido()&&!esAdminGeneral()){
-    E("susp-msg").textContent=ESTADO_ACCESO.mensaje||MSG_SUSP_DEF;
-    E("susp-hasta").textContent="🗓️ Reactivación: "+fmtFechaHora(ESTADO_ACCESO.hasta);
-    ov.style.display="block";document.body.style.overflow="hidden";
-  }else{ov.style.display="none";document.body.style.overflow="";}
-  pintarControlAcceso();
-  pintarAvisoAdminSusp();
-}
-function pintarControlAcceso(){
-  const c=E("ctrl-acceso");if(!c)return;
-  c.style.display=esAdminGeneral()?"":"none";
-  const est=E("ctrl-acceso-estado");if(!est)return;
-  est.innerHTML=accesoSuspendido()
-    ?'<span style="color:var(--ro);font-weight:800;">● SUSPENDIDO</span> para todo el personal y los administradores HSEQ de centro hasta el <strong>'+fmtFechaHora(ESTADO_ACCESO.hasta)+'</strong> · solo la clave de administrador general puede ingresar.'
-    :'<span style="color:var(--ve);font-weight:800;">● ACTIVO</span> · la plataforma está abierta para todos.';
-}
-function pintarAvisoAdminSusp(){
-  let b=E("susp-aviso-admin");
-  if(!(accesoSuspendido()&&esAdminGeneral())){if(b)b.remove();return;}
-  if(!b){
-    b=document.createElement("div");b.id="susp-aviso-admin";
-    b.style.cssText="position:fixed;left:0;right:0;bottom:0;z-index:9999;background:#E8720C;color:#fff;font-size:11px;font-weight:700;text-align:center;padding:6px 10px;";
-    document.body.appendChild(b);
-  }
-  b.textContent="🔐 Plataforma suspendida para el personal hasta el "+fmtFechaHora(ESTADO_ACCESO.hasta)+" · solo el administrador general tiene acceso.";
-}
-let _intentosAcceso=0;
-function escucharEstadoAcceso(){
-  if(!dbFS){if(++_intentosAcceso<30)setTimeout(escucharEstadoAcceso,1000);return;}
-  dbFS.collection("config").doc("acceso").onSnapshot(snap=>{
-    const d=snap.exists?snap.data():{};
-    ESTADO_ACCESO={suspendido:!!d.suspendido,hasta:Number(d.hasta)||0,mensaje:d.mensaje||""};
-    aplicarSuspension();
-  },err=>console.warn("No se pudo leer el estado de acceso",err));
-}
-async function suspenderAcceso(){
-  if(!esAdminGeneral())return void alert("Solo el administrador general puede ejecutar esta acción.");
-  if(!dbFS)return void alert("Sin conexión a la base de datos.");
-  const v=E("ctrl-acceso-hasta").value,hasta=v?new Date(v).getTime():0;
-  if(!hasta||hasta<=Date.now())return void alert("Indica una fecha y hora de reactivación posterior a este momento.");
-  const mensaje=(E("ctrl-acceso-msg").value||"").trim();
-  if(!confirm("Se bloqueará el ingreso de TODO el personal y de los administradores HSEQ de centro hasta el "+fmtFechaHora(hasta)+".\n\nSolo la clave de administrador general podrá entrar.\n\n¿Continuar?"))return;
-  try{
-    await dbFS.collection("config").doc("acceso").set({suspendido:true,hasta,mensaje,actualizado:Date.now(),por:sesionAdmin.nombre});
-    alert("✅ Acceso suspendido. Quienes tengan la app abierta quedarán bloqueados en segundos.");
-  }catch(err){alert("No se pudo guardar: "+(err&&err.message||err)+"\n\nRevisa que las reglas de Firestore permitan escribir en la colección config.");}
-}
-async function reactivarAcceso(){
-  if(!esAdminGeneral())return void alert("Solo el administrador general puede ejecutar esta acción.");
-  if(!dbFS)return void alert("Sin conexión a la base de datos.");
-  if(!confirm("¿Reactivar ahora el acceso para todo el personal?"))return;
-  try{
-    await dbFS.collection("config").doc("acceso").set({suspendido:false,hasta:0,mensaje:"",actualizado:Date.now(),por:sesionAdmin.nombre});
-    alert("✅ Plataforma reactivada para todos.");
-  }catch(err){alert("No se pudo guardar: "+(err&&err.message||err));}
-}
-function entrarAdminSuspension(){
-  const p=(E("susp-pin").value||"").trim().toUpperCase(),u=resolverClave(p);
-  if(!u||"general"!==u.rol){E("susp-pin-err").textContent="⚠️ Durante la suspensión solo puede ingresar el administrador general.";return;}
-  sesionAdmin=u;sesSet("admin_sesion",JSON.stringify(u));
-  E("susp-pin").value="";E("susp-pin-err").textContent="";
-  revelarAdmin(false);aplicarSuspension();
-  N("admin",E("tab-admin"));
-}
-/* Enganches: refrescar el bloqueo al entrar/salir del panel y no sumar XP durante la suspensión */
-(function(){
-  const _abrir=abrirPanelAdmin;abrirPanelAdmin=function(){const r=_abrir.apply(this,arguments);aplicarSuspension();return r;};
-  const _cerrar=cerrarSesionAdmin;cerrarSesionAdmin=function(){const r=_cerrar.apply(this,arguments);aplicarSuspension();return r;};
-  const _sumar=sumarXP;sumarXP=function(){if(accesoSuspendido()&&!esAdminGeneral())return;return _sumar.apply(this,arguments);};
-})();
-escucharEstadoAcceso();
-setInterval(aplicarSuspension,30000); /* reactivación automática al llegar la fecha */
-</script>
 </body>
 </html>
