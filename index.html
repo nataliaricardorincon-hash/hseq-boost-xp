@@ -3136,20 +3136,26 @@ async function otorgarXPActividad(xp,act,variante,extra){
   const quedan=MAX_INTENTOS-intentosDe(act,variante);
   if(xp<=0)
     return {estado:"cero",msg:quedan>0?"No acertaste ninguna pregunta, así que no sumaste XP. Te queda "+quedan+" intento con puntos.":"No acertaste ninguna pregunta y agotaste tus intentos con puntos."};
-  const previo=xpPorAct[k]||0;
-  if(previo>0&&dbFS&&participante&&participante.fid){
+  // Borra SIEMPRE el XP previo de esta misma actividad, consultando la base
+  let previo=0;
+  if(dbFS&&participante&&participante.fid){
     try{
-      const s=await dbFS.collection("xp_eventos").where("participanteId","==",participante.fid).where("actividad","==",etiqueta).get();
-      if(!s.empty){
+      const s=await dbFS.collection("xp_eventos").where("participanteId","==",participante.fid).get();
+      const dup=s.docs.filter(d=>(d.data().actividad||"")===etiqueta);
+      dup.forEach(d=>{previo+=(d.data().xp||0)});
+      if(dup.length){
         const lote=dbFS.batch();
-        s.docs.forEach(d=>lote.delete(d.ref));
+        dup.forEach(d=>lote.delete(d.ref));
         await lote.commit();
-        await dbFS.collection("participantes").doc(participante.fid).update({xp:firebase.firestore.FieldValue.increment(-previo)});
-        participante.xp=Math.max(0,participante.xp-previo);
-        renderXpBar();
+        if(previo>0){
+          await dbFS.collection("participantes").doc(participante.fid).update({xp:firebase.firestore.FieldValue.increment(-previo)});
+          participante.xp=Math.max(0,(participante.xp||0)-previo);
+          renderXpBar();
+        }
       }
     }catch(err){console.warn("reemplazo XP:",err);}
   }
+  if(!previo)previo=xpPorAct[k]||0;
   xpPorAct[k]=xp;
   marcarCompletado(act,variante);
   sumarXP(xp,etiqueta,extra);
