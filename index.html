@@ -421,6 +421,9 @@ window.addEventListener("unhandledrejection",function(ev){
   </div>
   <div class="card week-panel" id="pan-familia" style="display:none;">
     <div class="st">👨‍👩‍👧 Mi Familia Me Espera</div>
+    <div style="background:#eff6ff;border:.5px solid #bfdbfe;border-radius:8px;padding:9px;font-size:10px;color:var(--az);margin-bottom:10px;line-height:1.5;">
+      📌 <strong>Cómo ganas los 68 XP:</strong> cuenta por qué te cuidas y envíalo. El <strong>HSEQ de tu centro lo revisará</strong> y, una vez verificado, recibirás los <strong>68 XP</strong>.
+    </div>
     <div class="fg"><label class="fl">¿Por qué te cuidas? Cuéntanos brevemente</label><textarea class="fi" id="fam-texto" rows="2" placeholder="Ej: porque mis hijos me esperan en casa todos los días..."></textarea></div>
     <div class="fg">
       <label class="fl">Foto con tu familia (opcional)</label>
@@ -507,8 +510,11 @@ window.addEventListener("unhandledrejection",function(ev){
   </div>
   <div class="card week-panel" id="pan-compromiso" style="display:none;">
     <div class="st">🌟 Compromiso SSTA Final</div>
+    <div style="background:#eff6ff;border:.5px solid #bfdbfe;border-radius:8px;padding:9px;font-size:10px;color:var(--az);margin-bottom:10px;line-height:1.5;">
+      📌 <strong>Cómo ganas los 60 XP:</strong> marca la casilla, escribe tu compromiso personal y envíalo. El <strong>HSEQ de tu centro lo revisará</strong> y, una vez verificado, recibirás los <strong>60 XP</strong>.
+    </div>
     <label class="ind-chk"><input type="checkbox" id="comp-check"> Me comprometo a cuidar mi vida y la de mi equipo, usando siempre mi EPP y reportando lo que ponga en riesgo nuestra seguridad.</label>
-    <div class="fg" style="margin-top:8px;"><label class="fl">Escribe tu compromiso personal (opcional)</label><textarea class="fi" id="comp-texto" rows="2" placeholder="Este mes me comprometo a..."></textarea></div>
+    <div class="fg" style="margin-top:8px;"><label class="fl">Escribe tu compromiso personal</label><textarea class="fi" id="comp-texto" rows="2" placeholder="Este mes me comprometo a..."></textarea></div>
     <button class="btn bam bw" onclick="enviarCompromiso()">🌟 Renovar mi compromiso · 60 XP</button>
     <div id="comp-resultado" style="margin-top:8px;"></div>
   </div>
@@ -859,7 +865,7 @@ window.addEventListener("unhandledrejection",function(ev){
   </div>
   <div class="card" id="card-reconocimiento">
     <div class="st">💛 Tarjeta Gracias por Cuidarme</div>
-    <div class="notif ny"><div class="ni">💛</div><div class="nb"><div class="nt">Reconoce a un compañero que inspire cultura de seguridad. Ganas 10 XP por cada reconocimiento, <strong>hasta 5 veces en el mes</strong> (50 XP máximo).</div></div></div>
+    <div class="notif ny"><div class="ni">💛</div><div class="nb"><div class="nt">Reconoce a un compañero que inspire cultura de seguridad. El <strong>HSEQ de tu centro revisa cada reconocimiento</strong> y, al validarlo, recibes <strong>10 XP</strong> (hasta 5 veces en el mes).</div></div></div>
     <div class="fg" style="position:relative;"><label class="fl">Nombre del compañero</label><input class="fi" id="reco-nombre" placeholder="Escribe al menos 3 letras para buscar..." autocomplete="off" oninput="filtrarNombresReco()" onfocus="filtrarNombresReco()"><div id="reco-sugerencias" style="display:none;position:absolute;z-index:20;left:0;right:0;background:#fff;border:1px solid var(--b);border-radius:8px;max-height:220px;overflow-y:auto;box-shadow:0 6px 20px rgba(0,0,0,.12);margin-top:2px;"></div></div>
     <div class="fg"><label class="fl">¿Por qué lo reconoces?</label><textarea class="fi" id="reco-motivo" rows="2" placeholder="Me inspira porque..."></textarea></div>
     <button class="btn bam bw" onclick="enviarReconocimiento()">💛 Enviar reconocimiento · +10 XP</button>
@@ -3706,7 +3712,7 @@ function abrirQueHarias(){togglePanelExclusive("queharias"),iniciarQuizGenerico(
   if(await yaEnvioValidacion("Mi Familia Me Espera")){alert("✅ Ya enviaste esta actividad.");return;}
   const txtF=E("fam-texto").value.trim();
   const fotosF=(fotosGen.fam||[]).map(f=>f.dataUrl);
-  if(!await enviarAValidacion("Mi Familia Me Espera",txtF,{paraQuien:(E("fam-nombre")||{}).value||"",fotos:fotosF}))return void alert("No se pudo enviar. Intenta de nuevo.");
+  if(!await enviarAValidacion("Mi Familia Me Espera",txtF,{fotos:fotosF}))return void alert("No se pudo enviar. Intenta de nuevo.");
   marcarCompletado("Mi Familia Me Espera");
   E("fam-texto").value="";fotosGen.fam=[];renderFotosGen("fam");
   avisoEnviado("fam-resultado","Mi Familia Me Espera");
