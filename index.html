@@ -1225,7 +1225,7 @@ window.addEventListener("unhandledrejection",function(ev){
           </div>
           <div class="card">
             <div class="st">📱 Códigos activos</div>
-            <table class="tbl"><thead><tr><th>Código</th><th>Semana</th><th>XP</th><th>Usos</th></tr></thead><tbody id="qr-tbody"></tbody></table>
+            <table class="tbl"><thead><tr><th>Código</th><th>Semana</th><th>XP</th><th>Usos</th><th></th></tr></thead><tbody id="qr-tbody"></tbody></table>
           </div>
         </div>
       </div>
@@ -1244,6 +1244,7 @@ window.addEventListener("unhandledrejection",function(ev){
           </select></div>
           <div class="fg"><label class="fl">Centro de trabajo</label><select class="fs" id="mov-centro"></select></div>
           <button class="btn bp bw" onclick="generarCodigoMovilidad()">🚦 Generar código y QR</button>
+          <button class="btn bo bw" style="margin-top:6px;" onclick="generarMovilidadTodosCentros()">🏢 Generar un código para TODOS los centros</button>
           <div id="mov-qr-resultado" style="margin-top:10px;"></div>
         </div>
         <div class="card" style="margin-bottom:10px;">
@@ -1722,15 +1723,17 @@ function sesSet(k,v){_memStore[k]=v;try{sessionStorage.setItem(k,v);}catch(e){}}
 function sesDel(k){delete _memStore[k];try{sessionStorage.removeItem(k);}catch(e){}}
 
 /* ===== APERTURA PROGRESIVA DE LAS SEMANAS ===== */
+function esAdminGeneral(){return !!(sesionAdmin&&"general"===sesionAdmin.rol);}
 function semanaDisponible(s){
+  if(esAdminGeneral())return true;        // el admin general entra siempre, para revisar y ajustar
   const r=rangoSemana(s);
-  return Date.now()>=r.ini;   // la semana abre en su fecha y ya no se cierra
+  return Date.now()>=r.ini;
 }
 function aplicarBloqueoSimulacro(){
   const scr=E("scr-simulacro");
   if(!scr)return;
   const SIMU_INICIO=new Date(2026,9,20).getTime();
-  const abierto=Date.now()>=SIMU_INICIO;
+  const abierto=esAdminGeneral()||Date.now()>=SIMU_INICIO;
   const tab=document.querySelector('.ntab[onclick*="\'simulacro\'"]');
   if(tab){
     const base=tab.textContent.replace(/^🔒\s*/,"");
@@ -1793,6 +1796,18 @@ function aplicarBloqueoSemanas(){
       bloq.remove();
       scr.querySelectorAll(".g4,.g3").forEach(el=>el.style.display="");
     }
+    let adv=E("adv-adm-s"+s);
+    if(abierta&&esAdminGeneral()&&Date.now()<rangoSemana(s).ini){
+      if(!adv){
+        const r2=rangoSemana(s), f2=d=>new Date(d).getDate()+"/10";
+        adv=document.createElement("div");
+        adv.id="adv-adm-s"+s;
+        adv.style.cssText="background:#fef3c7;border:1.5px solid var(--am);border-radius:10px;padding:9px 12px;font-size:11px;color:#92400e;font-weight:700;margin-bottom:10px;";
+        adv.innerHTML="🔐 Vista de administrador · esta semana está bloqueada para el personal hasta el "+f2(r2.ini)+". Lo que hagas aquí sí registra XP.";
+        const hdr2=scr.querySelector(".hdr");
+        if(hdr2)hdr2.insertAdjacentElement("afterend",adv);
+      }
+    }else if(adv)adv.remove();
     // Tarjeta de la semana en la pantalla de Inicio
     const card=document.querySelector('#scr-inicio .act-card[onclick*="\'s'+s+'\'"]');
     if(card){
@@ -3069,15 +3084,43 @@ function initFirebase(){
 }
 let completadasSet=new Set();
 async function cargarCompletadas(){
-  if(!dbFS||!participante||!participante.fid){completadasSet=new Set();conteoAct={};return;}
+  if(!dbFS||!participante||!participante.fid){completadasSet=new Set();intentosFallidos=new Set();conteoAct={};return;}
   try{
     const snap=await dbFS.collection("xp_eventos").where("participanteId","==",participante.fid).get();
-    completadasSet=new Set(snap.docs.map(d=>{const v=d.data();return v.variante?v.actividad+"::"+v.variante:v.actividad;}));
+    completadasSet=new Set();intentosFallidos=new Set();
+    snap.docs.forEach(d=>{
+      const v=d.data(), k=v.variante?v.actividad+"::"+v.variante:v.actividad;
+      if(v.intentoFallido)intentosFallidos.add(k); else completadasSet.add(k);
+    });
     conteoAct={};snap.docs.forEach(d=>{const a=(d.data().actividad||"").split(":")[0].trim();conteoAct[a]=(conteoAct[a]||0)+1;});
     setTimeout(aplicarBloqueosTope,80);
   }catch(err){console.warn("No se pudieron cargar las actividades completadas",err);}
 }
-let conteoAct={};
+let conteoAct={},intentosFallidos=new Set();
+/* Un solo reintento: si falla dos veces, la actividad queda cerrada */
+function registrarFallo(actividad,variante){
+  const k=variante?actividad+"::"+variante:actividad;
+  if(intentosFallidos.has(k)){
+    marcarCompletado(actividad,variante);   // segundo fallo: se cierra
+    return "cerrada";
+  }
+  intentosFallidos.add(k);
+  if(dbFS&&participante&&participante.fid){
+    dbFS.collection("xp_eventos").add(Object.assign({
+      participanteId:participante.fid, participanteNombre:participante.nombre,
+      empresa:participante.empresa, centro:participante.centro,
+      actividad, xp:0, intentoFallido:true, timestamp:Date.now()
+    },variante?{variante}:{})).catch(()=>{});
+  }
+  return "reintento";
+}
+function avisoFallo(estado,contenedor){
+  const el=E(contenedor); if(!el)return;
+  const extra=estado==="cerrada"
+    ? '<div class="notif ny" style="margin-top:8px;"><div class="ni">🔒</div><div class="nb"><div class="nt">Sin aciertos por segunda vez · actividad cerrada</div><div class="nm">Ya usaste tu reintento. Esta actividad no volverá a estar disponible.</div></div></div>'
+    : '<div class="notif na2" style="margin-top:8px;"><div class="ni">🔁</div><div class="nb"><div class="nt">Sin aciertos · te queda 1 reintento</div><div class="nm">Vuelve a intentarlo con calma. Si no aciertas nada en el segundo intento, la actividad se cierra.</div></div></div>';
+  el.insertAdjacentHTML("beforeend",extra);
+}
 const MES_INICIO=new Date(2026,9,1).getTime();  // 1 de octubre de 2026
 const SEMANA_MS=7*24*60*60*1000;
 const MES_FIN=new Date(2026,9,31,23,59,59,999).getTime();  // 31 de octubre de 2026
@@ -3524,7 +3567,7 @@ async function canjearMovilidad(){
   res.innerHTML='<div style="font-size:11px;color:var(--txt2);">Verificando código...</div>';
   try{
     const snap=await dbFS.collection("actividades_presenciales").where("codigo","==",cod).limit(1).get();
-    if(snap.empty)return av("Código no válido. Verifica con quien dirigió la actividad.");
+    if(snap.empty)return av("🚫 Este código no es válido · No corresponde a ninguna actividad de Movilidad generada por el equipo HSEQ. Solo sirve el código que entrega quien dirige la actividad, después de participar.");
     const doc=snap.docs[0], a=doc.data();
     if(!a.activo)return av("Este código ya fue cerrado por el facilitador.");
     await doc.ref.update({usos:(a.usos||0)+1});
@@ -3578,6 +3621,39 @@ async function generarCodigoMovilidad(){
     cargarCodigosMovilidad();
   }catch(err){console.warn(err);alert("No se pudo generar el código.");}
 }
+
+/* Genera un código de Movilidad por cada centro de trabajo, de una sola vez */
+async function generarMovilidadTodosCentros(){
+  if(!sesionAdmin||"general"!==sesionAdmin.rol)return void alert("Solo el administrador general puede generar códigos masivos.");
+  if(!dbFS)return void alert("Sin conexión a la base de datos.");
+  const modalidad=E("mov-modalidad").value;
+  const centros=[...new Set(PERSONAL_REGISTRO.map(r=>r.c).filter(Boolean))].sort();
+  if(!confirm("Se generará un código de Movilidad ("+modalidad+") para cada uno de los "+centros.length+" centros de trabajo.\n\n¿Continuar?"))return;
+  const cont=E("mov-qr-resultado");
+  cont.innerHTML='<div style="font-size:11px;color:var(--txt2);">⏳ Generando códigos...</div>';
+  const creados=[];
+  try{
+    for(let i=0;i<centros.length;i+=400){
+      const lote=dbFS.batch();
+      centros.slice(i,i+400).forEach(centro=>{
+        const codigo="MOV-"+Math.random().toString(36).substr(2,4).toUpperCase();
+        creados.push({centro,codigo});
+        lote.set(dbFS.collection("actividades_presenciales").doc(),{tipo:"movilidad",codigo,modalidad,centro,xp:60,usos:0,activo:true,creado:Date.now()});
+      });
+      await lote.commit();
+    }
+    cont.innerHTML='<div class="notif nv" style="margin-bottom:8px;"><div class="ni">✅</div><div class="nb"><div class="nt">'+creados.length+' códigos generados</div><div class="nm">'+modalidad+' · uno por centro de trabajo. Imprime o comparte el QR de cada centro con quien dirige la actividad.</div></div></div>'
+      +'<div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center;">'
+      +creados.map(c=>{
+        const url="https://nataliaricardorincon-hash.github.io/hseq-boost-xp/?mov="+encodeURIComponent(c.codigo);
+        return '<div style="text-align:center;background:#fff;border:1px solid var(--b);border-radius:10px;padding:8px;width:150px;">'
+          +'<img src="https://api.qrserver.com/v1/create-qr-code/?size=130x130&data='+encodeURIComponent(url)+'" style="width:120px;height:120px;border-radius:6px;">'
+          +'<div style="font-family:monospace;font-weight:800;font-size:11px;color:var(--az);margin-top:4px;">'+c.codigo+'</div>'
+          +'<div style="font-size:8px;color:var(--txt2);line-height:1.2;">'+c.centro+'</div></div>';
+      }).join("")+'</div>';
+    cargarCodigosMovilidad();
+  }catch(err){console.error(err);cont.innerHTML='<div class="notif ny"><div class="ni">⚠️</div><div class="nb"><div class="nt">Error</div><div class="nm">'+(err&&err.message||err)+'</div></div></div>';}
+}
 async function cargarCodigosMovilidad(){
   if(!E("mov-tbody")||!dbFS)return;
   try{
@@ -3587,9 +3663,27 @@ async function cargarCodigosMovilidad(){
     E("mov-tbody").innerHTML=docs.length?docs.map(d=>{
       const a=d.data();
       return `<tr><td style="font-family:monospace;font-size:10px;">${a.codigo}</td><td style="font-size:10px;">${a.modalidad||"—"}</td><td style="font-size:10px;">${a.centro||"—"}</td><td><strong>${a.usos||0}</strong></td>
-      <td>${a.activo?`<button class="btn bro bsm" style="font-size:9px;padding:3px 7px;" onclick="cerrarCodigoMovilidad('${d.id}')">Cerrar</button>`:'<span class="bdg bgn">cerrado</span>'}</td></tr>`;
+      <td style="white-space:nowrap;">${a.activo?`<button class="btn bo bsm" style="font-size:9px;padding:3px 6px;" onclick="cerrarCodigoMovilidad('${d.id}')">Cerrar</button> `:'<span class="bdg bgn">cerrado</span> '}<button class="btn bro bsm" style="font-size:9px;padding:3px 6px;" onclick="eliminarCodigoMovilidad('${d.id}','${a.codigo}')" title="Eliminar">🗑️</button></td></tr>`;
     }).join(""):'<tr><td colspan="5" style="text-align:center;color:var(--txt2);font-size:11px;padding:10px;">Aún no se ha generado ningún código</td></tr>';
   }catch(err){console.warn(err);}
+}
+
+async function cerrarCodigoDorado(id){
+  if(!sesionAdmin||!dbFS)return;
+  if(!confirm("¿Desactivar este código? Nadie más podrá canjearlo."))return;
+  try{await dbFS.collection("codigos_dorados").doc(id).update({activo:false});cargarCodigosDorados();}catch(e){console.warn(e);}
+}
+async function eliminarCodigoDorado(id,codigo){
+  if(!sesionAdmin||"general"!==sesionAdmin.rol)return void alert("Solo el administrador general puede eliminar códigos.");
+  if(!dbFS)return;
+  if(!confirm('Se eliminará el código "'+codigo+'".\n\nSi alguien ya lo canjeó, conservará su XP.\n\n¿Continuar?'))return;
+  try{await dbFS.collection("codigos_dorados").doc(id).delete();cargarCodigosDorados();}catch(e){alert("No se pudo eliminar: "+(e&&e.message||e));}
+}
+async function eliminarCodigoMovilidad(id,codigo){
+  if(!sesionAdmin||"general"!==sesionAdmin.rol)return void alert("Solo el administrador general puede eliminar códigos.");
+  if(!dbFS)return;
+  if(!confirm('Se eliminará el código de Movilidad "'+codigo+'".\n\n¿Continuar?'))return;
+  try{await dbFS.collection("actividades_presenciales").doc(id).delete();cargarCodigosMovilidad();}catch(e){alert("No se pudo eliminar: "+(e&&e.message||e));}
 }
 async function cerrarCodigoMovilidad(id){
   if(!dbFS||!confirm("¿Cerrar este código? Nadie más podrá usarlo."))return;
@@ -3735,7 +3829,7 @@ async function cargarCodigosDorados(){
       const ah=Date.now();
       let est='<span class="bdg bgn">sin vigencia</span>';
       if(c.vigenciaIni&&c.vigenciaFin)est=ah<c.vigenciaIni?'<span class="bdg bga">pendiente</span>':ah>c.vigenciaFin?'<span class="bdg bgn">vencido</span>':'<span class="bdg bgv">vigente</span>';
-      return `<tr><td style="font-family:monospace;font-size:10px;">${c.codigo}</td><td style="font-size:10px;">${c.semana?"S"+c.semana:"—"} ${est}</td><td><span class="bdg bgx">${c.xp} XP</span></td><td>${c.usos||0}</td></tr>`;
+      return `<tr><td style="font-family:monospace;font-size:10px;">${c.codigo}</td><td style="font-size:10px;">${c.semana?"S"+c.semana:"—"} ${est}</td><td><span class="bdg bgx">${c.xp} XP</span></td><td>${c.usos||0}</td><td style="white-space:nowrap;">${c.activo?`<button class="btn bo bsm" style="font-size:9px;padding:3px 6px;" onclick="cerrarCodigoDorado('${d.id}')">Cerrar</button> `:""}<button class="btn bro bsm" style="font-size:9px;padding:3px 6px;" onclick="eliminarCodigoDorado('${d.id}','${c.codigo}')" title="Eliminar">🗑️</button></td></tr>`;
     }).join(""):'<tr><td colspan="4" style="text-align:center;color:var(--txt2);font-size:11px;padding:10px;">Aún no se ha generado ningún código</td></tr>';
   }catch(err){console.warn("No se pudieron cargar los códigos dorados",err);}
 }
@@ -3747,7 +3841,7 @@ async function canjearCodigoDorado(){
   if(!dbFS){E("dorado-resultado").innerHTML='<div class="notif ny"><div class="ni">⚠️</div><div class="nb"><div class="nt">Sin conexión a la base de datos</div></div></div>';return;}
   try{
     const snap=await dbFS.collection("codigos_dorados").where("codigo","==",codigo).limit(1).get();
-    if(snap.empty){E("dorado-resultado").innerHTML='<div class="notif ny"><div class="ni">❌</div><div class="nb"><div class="nt">Código inválido</div><div class="nm">Revisa que lo hayas escrito bien.</div></div></div>';return;}
+    if(snap.empty){E("dorado-resultado").innerHTML='<div class="notif ny"><div class="ni">🚫</div><div class="nb"><div class="nt">Este código no es válido</div><div class="nm">No corresponde a ningún Código Dorado generado para el Mes HSEQ. Solo sirven los códigos que entrega el equipo HSEQ en cada centro. Verifica que lo hayas escrito bien.</div></div></div>';return;}
     const doc=snap.docs[0],c=doc.data();
     if(!c.activo){E("dorado-resultado").innerHTML='<div class="notif ny"><div class="ni">⚠️</div><div class="nb"><div class="nt">Este código ya no está activo</div></div></div>';return;}
     if(c.empresa&&c.empresa!==participante.empresa){E("dorado-resultado").innerHTML='<div class="notif ny"><div class="ni">⚠️</div><div class="nb"><div class="nt">Este código es exclusivo de otra empresa</div></div></div>';return;}
