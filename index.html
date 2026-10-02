@@ -158,14 +158,18 @@ window.addEventListener("unhandledrejection",function(ev){
     <div class="hs">Mi Compromiso con la Vida · 30 XP</div>
     <div class="tito-wrap"><svg width="72" height="82"><use href="#tito-svg"/></svg></div>
   </div>
-  <div class="notif na2"><div class="ni">💬</div><div class="nb"><div class="nt">Tito dice: "Escribe tu compromiso y toma la foto. ¡Al cierre del mes lo volverás a ver!"</div></div></div>
+  <div class="notif na2"><div class="ni">💬</div><div class="nb"><div class="nt">Tito dice: "Escribe tu compromiso con tus propias palabras. ¡Al cierre del mes lo volverás a ver!"</div></div></div>
+  <div style="background:#eff6ff;border:.5px solid #bfdbfe;border-radius:8px;padding:10px;font-size:11px;color:var(--az);margin-bottom:10px;line-height:1.5;">
+    📌 <strong>Cómo ganas los 30 XP:</strong> escribe tu compromiso y envíalo. El <strong>HSEQ de tu centro lo revisará</strong> y, una vez verificado, se te otorgarán los <strong>30 XP</strong> automáticamente.<br>
+    <span style="font-size:10px;">Escribe algo real y pensado: los compromisos vacíos o sin sentido serán rechazados.</span>
+  </div>
   <div class="card">
-    <div class="fg"><label class="fl">¿Para quién te cuidas?</label><input class="fi" placeholder="Nombre de quien te espera en casa..."></div>
-    <div class="fg"><label class="fl">Mi compromiso SSTA este mes</label><textarea class="fi" rows="3" placeholder="Me comprometo a..."></textarea></div>
+    <div class="fg"><label class="fl">¿Para quién te cuidas?</label><input class="fi" id="ap-quien" placeholder="Nombre de quien te espera en casa..."></div>
+    <div class="fg"><label class="fl">Mi compromiso SSTA este mes</label><textarea class="fi" id="ap-texto" rows="3" placeholder="Me comprometo a..."></textarea></div>
     <div class="fg"><label class="fl">Empresa</label>
       <select class="fs" id="ap-emp"><option value="">— Selecciona —</option><option value="LOG">ANAVA LOGISTICS</option><option value="TRANS">ANAVA TRANSPORT</option><option value="FZ">ANAVA FZ SERVICES</option><option value="INT">ANAVA INTERNATIONAL</option><option value="HOLD">ANAVA HOLDINGS</option><option value="3K">3K COMMODITIES</option><option value="LOGREN">LOGREN</option></select>
     </div>
-    <button class="btn bp bw" onclick="registrarApertura()">❤️ Registrar mi compromiso · 30 XP</button>
+    <button class="btn bp bw" onclick="registrarApertura()">❤️ Enviar mi compromiso · 30 XP al validarlo HSEQ</button>
   </div>
 </div>
 
