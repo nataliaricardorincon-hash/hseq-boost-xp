@@ -1674,9 +1674,30 @@ window.addEventListener("unhandledrejection",function(ev){
           <button class="btn bro bw" onclick="limpiarRegistrosPrevios()">🗑️ Borrar registros anteriores al 1 de octubre</button>
         </div>
         <div class="card" style="border:2px solid var(--ro);margin-bottom:10px;">
+          <div class="st" style="color:var(--ro);">🎯 Auditar XP otorgado solo por participar</div>
+          <div style="background:#fef2f2;border:.5px solid #fecaca;border-radius:8px;padding:9px;font-size:10px;color:#991b1b;margin-bottom:10px;line-height:1.5;">
+            Antes, varias actividades daban <strong>XP mínimo por solo participar</strong> aunque se fallara todo (1 XP en trivias y quizzes, 2 en crucigramas, 4 en memorama).<br>
+            Esta acción detecta esos eventos, los elimina y descuenta el XP. Las actividades quedan liberadas para rehacerlas respondiendo bien.
+          </div>
+          <div style="display:flex;gap:6px;margin-bottom:8px;">
+            <button class="btn bo bw" onclick="auditarParticipacion()">🔎 Revisar</button>
+            <button class="btn bro bw" onclick="revertirParticipacion()">↩️ Revertir</button>
+          </div>
+          <div id="part-estado" style="font-size:11px;"></div>
+        </div>
+        <div class="card" style="border:2px solid var(--az);margin-bottom:10px;">
+          <div class="st" style="color:var(--az);">🎁 Restablecer solo el XP de registro</div>
+          <div style="background:#eff6ff;border:.5px solid #bfdbfe;border-radius:8px;padding:9px;font-size:10px;color:var(--az);margin-bottom:10px;line-height:1.5;">
+            Deja a <strong>todos los participantes en 10 XP</strong>, el puntaje de bienvenida, sin tocar sus registros ni su inscripción.<br>
+            Úsalo después de la limpieza para dejar a todos parejos en el punto de partida.
+          </div>
+          <div id="solo-reg-estado" style="font-size:11px;margin-bottom:8px;"></div>
+          <button class="btn bp bw" onclick="restablecerSoloRegistro()">🎁 Dejar a todos en 10 XP</button>
+        </div>
+        <div class="card" style="border:2px solid var(--ro);margin-bottom:10px;">
           <div class="st" style="color:var(--ro);">🧹 Reiniciar XP de la campaña</div>
           <div style="background:#fef2f2;border:.5px solid #fecaca;border-radius:8px;padding:9px;font-size:10px;color:#991b1b;margin-bottom:10px;line-height:1.5;">
-            ⚠️ <strong>Acción irreversible.</strong> Pone en cero el XP de todos los participantes y borra los eventos de XP registrados <strong>antes del 1 de octubre de 2026</strong>.<br>
+            ⚠️ <strong>Acción irreversible.</strong> Pone en cero el XP de todos los participantes y borra los eventos de XP registrados <strong>antes del 5 de octubre de 2026</strong>, para limpiar las pruebas y la actividad del 1 al 4 de octubre.<br>
             Úsalo una sola vez, justo antes del arranque, para limpiar las pruebas y la actividad anticipada de septiembre. Los registros de personas <strong>no se borran</strong>: nadie tiene que volver a inscribirse.
           </div>
           <div id="reset-estado" style="font-size:11px;margin-bottom:8px;"></div>
@@ -2467,6 +2488,128 @@ async function limpiarRegistrosPrevios(){
     log('<div class="notif ny"><div class="ni">⚠️</div><div class="nb"><div class="nt">No se pudo completar</div><div class="nm">Detalle: '+(err&&err.message||err)+'</div></div></div>');
   }
 }
+
+/* ===== RESTABLECER SOLO EL XP DE REGISTRO (todos a 10) ===== */
+
+/* ===== AUDITAR XP OTORGADO SOLO POR PARTICIPAR ===== */
+const UMBRAL_PARTICIPACION={
+  "Trivia":1,"Verdadero o Falso":1,"Sí o No":1,"Mini Caso":1,"El Error Oculto":1,
+  "Identificar Peligros":1,"Ordena la Secuencia":1,"Mito o Realidad":1,"Crucigrama":2,"Memorama":4,
+  "Reto del EPP":1,"¿Qué harías tú?":1,"Clasifica el Residuo":1,
+  "Mi Trabajo Bien Hecho":1,"Antes de Arrancar":1,"Detecta la No Conformidad":1,"Señales que Salvan":1,
+  "La Voz del Cliente":1,"Factores de Riesgo Vial":1,"Ciclo PHVA en Acción":1,"Conductor Seguro":1
+};
+let AUDIT_PART=[];
+async function auditarParticipacion(){
+  if(!dbFS)return void alert("Sin conexión a la base de datos.");
+  const est=E("part-estado"), log=t=>{if(est)est.innerHTML=t;};
+  try{
+    log("⏳ Revisando eventos...");
+    const ev=await dbFS.collection("xp_eventos").get();
+    AUDIT_PART=ev.docs.filter(d=>{
+      const v=d.data(), base=(v.actividad||"").split(":")[0].trim(), u=UMBRAL_PARTICIPACION[base];
+      return u!==undefined&&(v.xp||0)>0&&(v.xp||0)<=u;
+    }).map(d=>Object.assign({id:d.id,ref:d.ref},d.data()));
+    if(!AUDIT_PART.length){
+      log('<div class="notif nv"><div class="ni">✅</div><div class="nb"><div class="nt">No hay XP otorgado solo por participar</div></div></div>');
+      return;
+    }
+    const porPers={};
+    AUDIT_PART.forEach(v=>{
+      const k=v.participanteNombre||v.participanteId;
+      if(!porPers[k])porPers[k]={xp:0,n:0,acts:{}};
+      porPers[k].xp+=v.xp||0;porPers[k].n++;
+      const b=(v.actividad||"").split(":")[0].trim();
+      porPers[k].acts[b]=(porPers[k].acts[b]||0)+1;
+    });
+    const tot=AUDIT_PART.reduce((s,v)=>s+(v.xp||0),0);
+    const filas=Object.entries(porPers).sort((a,b)=>b[1].n-a[1].n).map(([n,d])=>
+      '<tr><td style="font-weight:700;font-size:11px;">'+n+'</td><td style="font-weight:800;color:var(--ro);">'+d.n+'</td><td style="color:var(--xp);font-weight:800;">'+d.xp+' XP</td><td style="font-size:9px;color:var(--txt2);">'+Object.entries(d.acts).map(([a,c])=>a+" ×"+c).join(", ")+'</td></tr>').join("");
+    log('<div class="notif ny" style="margin-bottom:8px;"><div class="ni">🎯</div><div class="nb"><div class="nt">'+Object.keys(porPers).length+' persona(s) con XP por solo participar</div><div class="nm">'+AUDIT_PART.length+' evento(s) · <strong>'+tot+' XP</strong> a descontar.</div></div></div>'
+      +'<div style="max-height:340px;overflow-y:auto;"><table class="tbl"><thead><tr><th>Participante</th><th>Eventos</th><th>XP</th><th>Detalle</th></tr></thead><tbody>'+filas+'</tbody></table></div>');
+  }catch(err){console.error(err);log('<div class="notif ny"><div class="ni">⚠️</div><div class="nb"><div class="nt">Error</div><div class="nm">'+(err&&err.message||err)+'</div></div></div>');}
+}
+async function revertirParticipacion(){
+  if(!sesionAdmin||"general"!==sesionAdmin.rol)return void alert("Solo el administrador general puede revertir XP.");
+  if(!AUDIT_PART.length)return void alert("Primero toca «Revisar».");
+  const porPart={};
+  AUDIT_PART.forEach(v=>{if(v.participanteId)porPart[v.participanteId]=(porPart[v.participanteId]||0)+(v.xp||0);});
+  const tot=Object.values(porPart).reduce((a,b)=>a+b,0);
+  if(!confirm("Se eliminarán "+AUDIT_PART.length+" evento(s) y se descontarán "+tot+" XP a "+Object.keys(porPart).length+" participante(s).\n\nPodrán rehacer esas actividades respondiendo correctamente.\n\n¿Continuar?"))return;
+  const est=E("part-estado"), log=t=>{if(est)est.innerHTML=t;};
+  try{
+    for(let i=0;i<AUDIT_PART.length;i+=400){
+      const lote=dbFS.batch();
+      AUDIT_PART.slice(i,i+400).forEach(v=>lote.delete(v.ref));
+      await lote.commit();
+    }
+    const ids=Object.keys(porPart);
+    for(let i=0;i<ids.length;i+=300){
+      const lote=dbFS.batch();
+      ids.slice(i,i+300).forEach(id=>lote.update(dbFS.collection("participantes").doc(id),{xp:firebase.firestore.FieldValue.increment(-porPart[id])}));
+      await lote.commit();
+    }
+    log('<div class="notif nv"><div class="ni">↩️</div><div class="nb"><div class="nt">XP revertido</div><div class="nm">'+tot+' XP descontados a '+ids.length+' participante(s). Las actividades quedan disponibles.</div></div></div>');
+    AUDIT_PART=[];completadasSet=new Set();
+    await cargarDatosAdminReales();renderU();renderEmps();
+  }catch(err){console.error(err);log('<div class="notif ny"><div class="ni">⚠️</div><div class="nb"><div class="nt">Error</div><div class="nm">'+(err&&err.message||err)+'</div></div></div>');}
+}
+async function restablecerSoloRegistro(){
+  if(!sesionAdmin||"general"!==sesionAdmin.rol)return void alert("Solo el administrador general puede ejecutar esta acción.");
+  if(!dbFS)return void alert("Sin conexión a la base de datos.");
+  const est=E("solo-reg-estado"), log=t=>{if(est)est.innerHTML=t;};
+  const XP_REG=10, ACT="Registro (bienvenida)";
+  if(!confirm("Se dejará a TODOS los participantes en "+XP_REG+" XP (solo el puntaje de bienvenida).\n\nSe borrarán todos los demás eventos de XP.\nLos registros de personas se conservan.\n\n¿Continuar?"))return;
+  if(!confirm("Confirmación final: esta acción NO se puede deshacer.\n\n¿Dejar a todos en "+XP_REG+" XP?"))return;
+  try{
+    log("⏳ Leyendo participantes y eventos...");
+    const [ps,ev]=await Promise.all([
+      dbFS.collection("participantes").get(),
+      dbFS.collection("xp_eventos").get()
+    ]);
+    const borrar=ev.docs.filter(d=>(d.data().actividad||"")!==ACT);
+    let m=0;
+    for(let i=0;i<borrar.length;i+=400){
+      const lote=dbFS.batch();
+      borrar.slice(i,i+400).forEach(d=>{lote.delete(d.ref);m++;});
+      await lote.commit();
+      log("⏳ Eliminados "+m+" de "+borrar.length+" eventos...");
+    }
+    const conReg=new Set(ev.docs.filter(d=>(d.data().actividad||"")===ACT).map(d=>d.data().participanteId));
+    let n=0, creados=0;
+    for(let i=0;i<ps.docs.length;i+=300){
+      const lote=dbFS.batch();
+      ps.docs.slice(i,i+300).forEach(d=>{
+        lote.update(d.ref,{xp:XP_REG});n++;
+        if(!conReg.has(d.id)){
+          const p=d.data();
+          lote.set(dbFS.collection("xp_eventos").doc(),{participanteId:d.id,participanteNombre:p.nombre||"",empresa:p.empresa||"",centro:p.centro||"",actividad:ACT,xp:XP_REG,timestamp:Math.max(Date.now(),CORTE_LIMPIEZA)});
+          creados++;
+        }
+      });
+      await lote.commit();
+      log("⏳ Ajustados "+n+" de "+ps.docs.length+" participantes...");
+    }
+    // Limpiar también los intentos, para que todos vuelvan a tener sus 2 oportunidades
+    try{
+      const it=await dbFS.collection("intentos").get();
+      for(let i=0;i<it.docs.length;i+=400){
+        const lote=dbFS.batch();
+        it.docs.slice(i,i+400).forEach(d=>lote.delete(d.ref));
+        await lote.commit();
+      }
+    }catch(e){}
+    completadasSet=new Set();intentosPorAct={};xpPorAct={};conteoAct={};
+    if(participante)participante.xp=XP_REG;
+    renderXpBar();
+    log('<div class="notif nv"><div class="ni">🎁</div><div class="nb"><div class="nt">Todos en '+XP_REG+' XP</div><div class="nm">'+n+' participante(s) ajustados · '+m+' evento(s) eliminados'+(creados?' · '+creados+' evento(s) de bienvenida creados':'')+'. Las actividades quedan disponibles de nuevo.</div></div></div>');
+    await cargarDatosAdminReales();
+    renderU();renderEmps();
+  }catch(err){
+    console.error(err);
+    log('<div class="notif ny"><div class="ni">⚠️</div><div class="nb"><div class="nt">No se pudo completar</div><div class="nm">Detalle: '+(err&&err.message||err)+'</div></div></div>');
+  }
+}
 async function reiniciarCampana(){
   if(!sesionAdmin||"general"!==sesionAdmin.rol)return void alert("Solo el administrador general puede reiniciar la campaña.");
   if(!dbFS)return void alert("Sin conexión a la base de datos.");
@@ -2484,8 +2627,8 @@ async function reiniciarCampana(){
       await lote.commit();
       log("⏳ XP reiniciado en "+n+" de "+ps.docs.length+" participantes...");
     }
-    log("⏳ Borrando eventos de XP anteriores al 1 de octubre...");
-    const ev=await dbFS.collection("xp_eventos").where("timestamp","<",MES_INICIO).get();
+    log("⏳ Borrando eventos de XP anteriores al 5 de octubre...");
+    const ev=await dbFS.collection("xp_eventos").where("timestamp","<",CORTE_LIMPIEZA).get();
     let m=0;
     for(let i=0;i<ev.docs.length;i+=400){
       const lote=dbFS.batch();
@@ -2496,7 +2639,7 @@ async function reiniciarCampana(){
     completadasSet=new Set();conteoAct={};
     if(participante)participante.xp=0;
     renderXpBar();
-    log('<div class="notif nv"><div class="ni">✅</div><div class="nb"><div class="nt">Marcador reiniciado</div><div class="nm">'+n+' participantes en cero · '+m+' eventos previos eliminados. La campaña arranca limpia el 1 de octubre.</div></div></div>');
+    log('<div class="notif nv"><div class="ni">✅</div><div class="nb"><div class="nt">Marcador reiniciado</div><div class="nm">'+n+' participantes en cero · '+m+' eventos previos eliminados. La campaña arranca limpia desde el 5 de octubre.</div></div></div>');
     cargarDatosAdminReales();
   }catch(err){
     console.error(err);
@@ -3193,7 +3336,8 @@ function avisoFallo(estado,contenedor){
 }
 const MES_INICIO=new Date(2026,9,1).getTime();  // 1 de octubre de 2026
 const SEMANA_MS=7*24*60*60*1000;
-const MES_FIN=new Date(2026,9,31,23,59,59,999).getTime();  // 31 de octubre de 2026
+const MES_FIN=new Date(2026,9,31,23,59,59,999).getTime();
+const CORTE_LIMPIEZA=new Date(2026,9,5,0,0,0,0).getTime();  // reinicio: borra lo anterior al 5 de octubre  // 31 de octubre de 2026
 function rangoSemana(s){const ini=MES_INICIO+(s-1)*SEMANA_MS;return{ini,fin:4===s?MES_FIN:ini+SEMANA_MS-1};}
 function semanaActual(){if(Date.now()>MES_FIN)return null;const d=Math.floor((Date.now()-MES_INICIO)/SEMANA_MS)+1;return d>=1?Math.min(4,d):null;}
 function fechaCorta(ms){const d=new Date(ms);return d.getDate()+"/"+(d.getMonth()+1)+"/"+d.getFullYear();}
