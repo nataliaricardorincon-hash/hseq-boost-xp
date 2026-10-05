@@ -1698,20 +1698,19 @@ window.addEventListener("unhandledrejection",function(ev){
         <div class="card" style="border:2px solid var(--az);margin-bottom:10px;">
           <div class="st" style="color:var(--az);">🎁 Restablecer solo el XP de registro</div>
           <div style="background:#eff6ff;border:.5px solid #bfdbfe;border-radius:8px;padding:9px;font-size:10px;color:var(--az);margin-bottom:10px;line-height:1.5;">
-            Deja a <strong>todos los participantes en 10 XP</strong>, el puntaje de bienvenida, sin tocar sus registros ni su inscripción.<br>
-            Úsalo después de la limpieza para dejar a todos parejos en el punto de partida.
+            Deja a <strong>todos los participantes en 10 XP</strong> y <strong>borra toda su actividad</strong> (eventos, intentos, ACIS, simulacro, validaciones y reconocimientos), dejando todas las actividades liberadas.<br>Los registros de personas NO se borran: nadie tiene que volver a inscribirse.
           </div>
           <div id="solo-reg-estado" style="font-size:11px;margin-bottom:8px;"></div>
           <button class="btn bp bw" onclick="restablecerSoloRegistro()">🎁 Dejar a todos en 10 XP</button>
         </div>
         <div class="card" style="border:2px solid var(--ro);margin-bottom:10px;">
-          <div class="st" style="color:var(--ro);">🧹 Reiniciar XP de la campaña</div>
+          <div class="st" style="color:var(--ro);">🧹 Limpiar actividad anterior al 5 de octubre</div>
           <div style="background:#fef2f2;border:.5px solid #fecaca;border-radius:8px;padding:9px;font-size:10px;color:#991b1b;margin-bottom:10px;line-height:1.5;">
-            ⚠️ <strong>Acción irreversible.</strong> Pone en cero el XP de todos los participantes y borra los eventos de XP registrados <strong>antes del 5 de octubre de 2026</strong>, para limpiar las pruebas y la actividad del 1 al 4 de octubre.<br>
+            ⚠️ <strong>Acción irreversible.</strong> Borra <strong>toda la actividad anterior al 5 de octubre</strong> (XP, intentos, ACIS, simulacro, personaje lúdico, validaciones y reconocimientos) y <strong>recalcula el XP</strong> de cada persona con lo que quede después de esa fecha.<br>Los registros de personas NO se borran y las actividades quedan liberadas para rehacerlas.<br>
             Úsalo una sola vez, justo antes del arranque, para limpiar las pruebas y la actividad anticipada de septiembre. Los registros de personas <strong>no se borran</strong>: nadie tiene que volver a inscribirse.
           </div>
           <div id="reset-estado" style="font-size:11px;margin-bottom:8px;"></div>
-          <button class="btn bro bw" onclick="reiniciarCampana()">🧹 Poner el marcador en cero</button>
+          <button class="btn bro bw" onclick="reiniciarCampana()">🧹 Limpiar y recalcular</button>
         </div>
         <div class="card">
           <div class="st">📅 Parámetros del mes</div>
@@ -2643,15 +2642,17 @@ async function restablecerSoloRegistro(){
       await lote.commit();
       log("⏳ Ajustados "+n+" de "+ps.docs.length+" participantes...");
     }
-    // Limpiar también los intentos, para que todos vuelvan a tener sus 2 oportunidades
-    try{
-      const it=await dbFS.collection("intentos").get();
-      for(let i=0;i<it.docs.length;i+=400){
-        const lote=dbFS.batch();
-        it.docs.slice(i,i+400).forEach(d=>lote.delete(d.ref));
-        await lote.commit();
-      }
-    }catch(e){}
+    // Limpiar intentos y registros de actividades, para dejar todo liberado
+    for(const col of ["intentos","acis_reportes","simulacro_registros","personaje_ludico","validaciones","reconocimientos"]){
+      try{
+        const s=await dbFS.collection(col).get();
+        for(let i=0;i<s.docs.length;i+=400){
+          const lote=dbFS.batch();
+          s.docs.slice(i,i+400).forEach(d=>lote.delete(d.ref));
+          await lote.commit();
+        }
+      }catch(e){console.warn(col,e);}
+    }
     completadasSet=new Set();intentosPorAct={};xpPorAct={};conteoAct={};
     if(participante)participante.xp=XP_REG;
     renderXpBar();
@@ -2666,33 +2667,56 @@ async function restablecerSoloRegistro(){
 async function reiniciarCampana(){
   if(!sesionAdmin||"general"!==sesionAdmin.rol)return void alert("Solo el administrador general puede reiniciar la campaña.");
   if(!dbFS)return void alert("Sin conexión a la base de datos.");
-  if(!confirm("⚠️ ATENCIÓN: la campaña YA ESTÁ EN CURSO.\n\nEsto pondrá en CERO el XP de TODOS los participantes, incluido el que ya ganaron este mes.\n\nSi solo quieres limpiar datos de prueba, usa el botón naranja. Si los contadores están desajustados, usa \"Recalcular XP\".\n\n¿Seguro que quieres borrar el XP de todos?"))return;
-  if(!confirm("Confirmación final: esta acción NO se puede deshacer.\n\n¿Reiniciar el marcador?"))return;
-  const est=E("reset-estado");
-  const log=t=>{if(est)est.innerHTML=t;};
+  const f=new Date(CORTE_LIMPIEZA), fTxt=f.getDate()+"/"+(f.getMonth()+1)+"/"+f.getFullYear();
+  if(!confirm("Se borrará TODA la actividad anterior al "+fTxt+":\n\n· Eventos de XP\n· Intentos de actividades\n· Reportes ACIS, simulacro, personaje lúdico\n· Validaciones y reconocimientos\n\nLuego se RECALCULA el XP de cada persona con lo que quede después de esa fecha.\n\nLos registros de personas NO se borran.\n\n¿Continuar?"))return;
+  if(!confirm("Confirmación final: esta acción NO se puede deshacer.\n\n¿Limpiar todo lo anterior al "+fTxt+"?"))return;
+  const est=E("reset-estado"), log=t=>{if(est)est.innerHTML=t;};
+  const borrarAntesDe=async(col,label)=>{
+    try{
+      const s=await dbFS.collection(col).where("timestamp","<",CORTE_LIMPIEZA).get();
+      let k=0;
+      for(let i=0;i<s.docs.length;i+=400){
+        const lote=dbFS.batch();
+        s.docs.slice(i,i+400).forEach(d=>{lote.delete(d.ref);k++});
+        await lote.commit();
+      }
+      if(k)log("⏳ "+k+" "+label+" eliminados...");
+      return k;
+    }catch(e){console.warn(col,e);return 0;}
+  };
   try{
-    log("⏳ Poniendo el XP en cero...");
-    const ps=await dbFS.collection("participantes").get();
+    log("⏳ Borrando eventos de XP previos...");
+    const nEv=await borrarAntesDe("xp_eventos","eventos de XP");
+    log("⏳ Borrando intentos previos...");
+    const nInt=await borrarAntesDe("intentos","intentos");
+    log("⏳ Borrando registros de actividades previos...");
+    let nOtros=0;
+    for(const [c,l] of [["acis_reportes","reportes ACIS"],["simulacro_registros","registros de simulacro"],
+                        ["personaje_ludico","fotos del personaje lúdico"],["validaciones","validaciones"],
+                        ["reconocimientos","reconocimientos"]]){
+      nOtros+=await borrarAntesDe(c,l);
+    }
+    // Recalcular el XP de cada persona con los eventos que QUEDARON
+    log("⏳ Recalculando el XP de cada participante...");
+    const [ps,ev]=await Promise.all([
+      dbFS.collection("participantes").get(),
+      dbFS.collection("xp_eventos").get()
+    ]);
+    const suma={};
+    ev.docs.forEach(d=>{const v=d.data();if(v.participanteId)suma[v.participanteId]=(suma[v.participanteId]||0)+(v.xp||0);});
     let n=0;
-    for(let i=0;i<ps.docs.length;i+=400){
+    for(let i=0;i<ps.docs.length;i+=300){
       const lote=dbFS.batch();
-      ps.docs.slice(i,i+400).forEach(d=>{lote.update(d.ref,{xp:0});n++});
+      ps.docs.slice(i,i+300).forEach(d=>{lote.update(d.ref,{xp:suma[d.id]||0});n++});
       await lote.commit();
-      log("⏳ XP reiniciado en "+n+" de "+ps.docs.length+" participantes...");
+      log("⏳ Recalculados "+n+" de "+ps.docs.length+" participantes...");
     }
-    log("⏳ Borrando eventos de XP anteriores al 5 de octubre...");
-    const ev=await dbFS.collection("xp_eventos").where("timestamp","<",CORTE_LIMPIEZA).get();
-    let m=0;
-    for(let i=0;i<ev.docs.length;i+=400){
-      const lote=dbFS.batch();
-      ev.docs.slice(i,i+400).forEach(d=>{lote.delete(d.ref);m++});
-      await lote.commit();
-      log("⏳ Eliminados "+m+" de "+ev.docs.length+" eventos previos...");
-    }
-    completadasSet=new Set();conteoAct={};
-    if(participante)participante.xp=0;
+    completadasSet=new Set();conteoAct={};intentosPorAct={};xpPorAct={};
+    if(participante&&participante.fid)participante.xp=suma[participante.fid]||0;
     renderXpBar();
-    log('<div class="notif nv"><div class="ni">✅</div><div class="nb"><div class="nt">Marcador reiniciado</div><div class="nm">'+n+' participantes en cero · '+m+' eventos previos eliminados. La campaña arranca limpia desde el 5 de octubre.</div></div></div>');
+    log('<div class="notif nv"><div class="ni">✅</div><div class="nb"><div class="nt">Limpieza completada</div><div class="nm">'
+      +nEv+' evento(s) de XP · '+nInt+' intento(s) · '+nOtros+' registro(s) de actividades eliminados.<br>'
+      +n+' participante(s) con su XP recalculado según lo que quedó después del '+fTxt+'.</div></div></div>');
     cargarDatosAdminReales();
   }catch(err){
     console.error(err);
