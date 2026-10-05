@@ -3353,8 +3353,18 @@ const MES_INICIO=new Date(2026,9,1).getTime();  // 1 de octubre de 2026
 const SEMANA_MS=7*24*60*60*1000;
 const MES_FIN=new Date(2026,9,31,23,59,59,999).getTime();
 const CORTE_LIMPIEZA=new Date(2026,9,5,0,0,0,0).getTime();  // reinicio: borra lo anterior al 5 de octubre  // 31 de octubre de 2026
-function rangoSemana(s){const ini=MES_INICIO+(s-1)*SEMANA_MS;return{ini,fin:4===s?MES_FIN:ini+SEMANA_MS-1};}
-function semanaActual(){if(Date.now()>MES_FIN)return null;const d=Math.floor((Date.now()-MES_INICIO)/SEMANA_MS)+1;return d>=1?Math.min(4,d):null;}
+const INICIO_SEMANA={1:new Date(2026,9,1).getTime(),2:new Date(2026,9,11).getTime(),3:new Date(2026,9,18).getTime(),4:new Date(2026,9,25).getTime()};
+function rangoSemana(s){
+  const ini=INICIO_SEMANA[s]||MES_INICIO;
+  const fin=(s>=4)?MES_FIN:(INICIO_SEMANA[s+1]-1);
+  return{ini,fin};
+}
+function semanaActual(){
+  const t=Date.now();
+  if(t>MES_FIN||t<MES_INICIO)return null;
+  for(let s=4;s>=1;s--)if(t>=INICIO_SEMANA[s])return s;
+  return 1;
+}
 function fechaCorta(ms){const d=new Date(ms);return d.getDate()+"/"+(d.getMonth()+1)+"/"+d.getFullYear();}
 
 const TOPES={"Tarjeta Gracias":5,"Ruta Saludable":5,"Código Dorado":12,"ACIS validado":30};
