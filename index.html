@@ -1766,6 +1766,45 @@ function sesDel(k){delete _memStore[k];try{sessionStorage.removeItem(k);}catch(e
 
 /* ===== APERTURA PROGRESIVA DE LAS SEMANAS ===== */
 function esAdminGeneral(){return !!(sesionAdmin&&"general"===sesionAdmin.rol);}
+function esPersonalAdmin(){return !!sesionAdmin;}   // admin general o HSEQ de centro
+function mesCerrado(){return Date.now()>MES_FIN&&!esPersonalAdmin();}
+function aplicarCierreMes(){
+  const cerrado=mesCerrado();
+  const SECCIONES=["apertura","simulacro","presencial","s1","s2","s3","s4","juegos","sorpresas"];
+  SECCIONES.forEach(id=>{
+    const scr=E("scr-"+id);
+    if(!scr)return;
+    const tab=document.querySelector('.ntab[onclick*="\''+id+'\'"]');
+    if(tab){
+      const base=tab.textContent.replace(/^🔒\s*/,"");
+      tab.textContent=cerrado?"🔒 "+base:base;
+      tab.style.opacity=cerrado?".5":"";
+    }
+    let av=E("cierre-"+id);
+    if(cerrado){
+      if(!av){
+        av=document.createElement("div");
+        av.id="cierre-"+id;
+        av.className="card";
+        av.style.cssText="border:2px solid var(--az);text-align:center;padding:24px 16px;background:linear-gradient(135deg,#eff6ff,#f8fafc);";
+        av.innerHTML='<div style="font-size:46px;margin-bottom:8px;">🏁</div>'
+          +'<div style="font-size:16px;font-weight:800;color:var(--az);margin-bottom:8px;">El Mes HSEQ Boost XP finalizó</div>'
+          +'<div style="font-size:12px;color:var(--txt2);line-height:1.6;">Las actividades y los juegos cerraron el <strong>31 de octubre a las 11:59 p. m.</strong><br>Gracias por participar y por cuidarte durante todo el mes.<br><br>Consulta tu puntaje final en <strong>Ranking</strong> e <strong>Insignias</strong>.</div>';
+      }
+      const hdr=scr.querySelector(".hdr");
+      if(hdr&&av.parentNode!==scr)hdr.insertAdjacentElement("afterend",av);
+      scr.querySelectorAll(".card,.g4,.g3,.g2").forEach(el=>{if(el!==av)el.style.display="none";});
+    }else if(av){
+      av.remove();
+      scr.querySelectorAll(".card,.g4,.g3,.g2").forEach(el=>el.style.display="");
+    }
+  });
+  // Tarjetas de la pantalla de Inicio
+  document.querySelectorAll("#scr-inicio .act-card").forEach(c=>{
+    const m=(c.getAttribute("onclick")||"").match(/'([^']+)'/);
+    if(m&&SECCIONES.indexOf(m[1])>=0){c.style.opacity=cerrado?".5":"";}
+  });
+}
 function semanaDisponible(s){
   if(esAdminGeneral())return true;        // el admin general entra siempre, para revisar y ajustar
   const r=rangoSemana(s);
@@ -1859,7 +1898,7 @@ function aplicarBloqueoSemanas(){
     }
   }
 }
-function N(e,a){SC.forEach(e=>{const a=E("scr-"+e);a&&a.classList.remove("on")}),document.querySelectorAll(".ntab").forEach(e=>e.classList.remove("on"));const r=E("scr-"+e);if(r&&r.classList.add("on"),a)a.classList.add("on");else{const a=document.querySelector(`.ntab[onclick*="'${e}'"]`);a&&a.classList.add("on")}(/^s[1-4]$/.test(e)||"simulacro"===e)&&aplicarBloqueoSemanas(),("s1"===e||"sorpresas"===e||"inicio"===e)&&setTimeout(aplicarBloqueosTope,60),"ranking-pub"===e&&cargarRankingPublico(),"insignias"===e&&cargarInsigniasReales(),"admin"===e&&chequearAccesoAdmin(),"dashboard"===e&&cargarDashboardPublico()}async function cargarDashboardPublico(){
+function N(e,a){SC.forEach(e=>{const a=E("scr-"+e);a&&a.classList.remove("on")}),document.querySelectorAll(".ntab").forEach(e=>e.classList.remove("on"));const r=E("scr-"+e);if(r&&r.classList.add("on"),a)a.classList.add("on");else{const a=document.querySelector(`.ntab[onclick*="'${e}'"]`);a&&a.classList.add("on")}aplicarCierreMes(),(/^s[1-4]$/.test(e)||"simulacro"===e)&&aplicarBloqueoSemanas(),("s1"===e||"sorpresas"===e||"inicio"===e)&&setTimeout(aplicarBloqueosTope,60),"ranking-pub"===e&&cargarRankingPublico(),"insignias"===e&&cargarInsigniasReales(),"admin"===e&&chequearAccesoAdmin(),"dashboard"===e&&cargarDashboardPublico()}async function cargarDashboardPublico(){
   if(!dbFS)return;
   try{
     const [pSnap,aSnap]=await Promise.all([
@@ -3423,7 +3462,7 @@ function avisoFueraDeCampana(){
   m.style.cssText="position:fixed;left:12px;right:12px;bottom:14px;z-index:9998;background:var(--az);color:#fff;padding:12px 14px;border-radius:12px;font-size:12px;box-shadow:0 6px 20px rgba(0,0,0,.25);text-align:center;";
   m.innerHTML=antes
     ? "🗓️ <strong>Aún no inicia el mes HSEQ</strong><br><span style='font-size:11px;opacity:.9;'>Puedes explorar y practicar libremente. El XP empieza a contar el 1 de octubre de 2026.</span>"
-    : "🏁 <strong>El mes HSEQ ya finalizó</strong><br><span style='font-size:11px;opacity:.9;'>Gracias por participar. El XP se cerró el 31 de octubre de 2026.</span>";
+    : "🏁 <strong>El mes HSEQ ya finalizó</strong><br><span style='font-size:11px;opacity:.9;'>Gracias por participar. Las actividades cerraron el 31 de octubre a las 11:59 p. m.</span>";
   document.body.appendChild(m);
   setTimeout(()=>{m.style.transition="opacity .4s";m.style.opacity="0";setTimeout(()=>m.remove(),450);},4200);
 }
@@ -3431,6 +3470,8 @@ function sumarXP(n,actividad,extra){if(!n)return;if(!campanaActiva())return void
 initFirebase();
 setTimeout(aplicarBloqueoSemanas,500);
 setInterval(aplicarBloqueoSemanas,600000);
+setTimeout(aplicarCierreMes,600);
+setInterval(aplicarCierreMes,600000);
 (function(){
   const mv=new URLSearchParams(location.search).get("mov");
   if(mv){
@@ -3456,7 +3497,7 @@ setInterval(aplicarBloqueoSemanas,600000);
   if(!campanaActiva()){
     e.innerHTML=Date.now()<MES_INICIO
       ? '🗓️ El Mes HSEQ Boost XP va del <strong>1 al 31 de octubre</strong> · practica libremente, el XP cuenta desde el 1'
-      : '🏁 El Mes HSEQ Boost XP cerró el <strong>31 de octubre</strong>'+(participante?' · Tu XP final: <strong>'+participante.xp+'</strong>':'');
+      : '🏁 El Mes HSEQ Boost XP cerró el <strong>31 de octubre a las 11:59 p. m.</strong>'+(participante?' · Tu XP final: <strong>'+participante.xp+'</strong>':'');
     return;
   }
   e.innerHTML=participante?"⭐ "+participante.nombre+' · Tu XP acumulado: <span id="global-xp">'+participante.xp+"</span>":'⚠️ <a href="#" onclick="N(\'registro\',null);return false;" style="color:var(--az);text-decoration:underline;">Regístrate</a> para empezar a acumular tu XP';
