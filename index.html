@@ -1789,7 +1789,11 @@ function aplicarCierreMes(){
         av.style.cssText="border:2px solid var(--az);text-align:center;padding:24px 16px;background:linear-gradient(135deg,#eff6ff,#f8fafc);";
         av.innerHTML='<div style="font-size:46px;margin-bottom:8px;">🏁</div>'
           +'<div style="font-size:16px;font-weight:800;color:var(--az);margin-bottom:8px;">El Mes HSEQ Boost XP finalizó</div>'
-          +'<div style="font-size:12px;color:var(--txt2);line-height:1.6;">Las actividades y los juegos cerraron el <strong>31 de octubre a las 11:59 p. m.</strong><br>Gracias por participar y por cuidarte durante todo el mes.<br><br>Consulta tu puntaje final en <strong>Ranking</strong> e <strong>Insignias</strong>.</div>';
+          +'<div style="font-size:12px;color:var(--txt2);line-height:1.6;">Las actividades y los juegos cerraron el <strong>31 de octubre a las 11:59 p. m.</strong><br>Gracias por participar y por cuidarte durante todo el mes.<br><br>'
+          +(Date.now()<FECHA_RESULTADOS
+            ? '📋 El equipo HSEQ está validando los últimos envíos hasta el <strong>6 de noviembre</strong>.<br>🏆 Los <strong>resultados finales se entregan el 9 de noviembre</strong>.<br><br>Tu puntaje puede subir si validan lo que enviaste.'
+            : '🏆 <strong>Resultados finales publicados.</strong>')
+          +'<br><br>Consulta tu puntaje en <strong>Ranking</strong> e <strong>Insignias</strong>.</div>';
       }
       const hdr=scr.querySelector(".hdr");
       if(hdr&&av.parentNode!==scr)hdr.insertAdjacentElement("afterend",av);
@@ -2700,6 +2704,7 @@ function abrirPanelAdmin(){
   E("admin-gate").style.display="none";
   E("admin-content").style.display="block";
   aplicarPermisos();
+  avisoPlazoValidacion();
   cargarDatosAdminReales().then(()=>{renderEmps();renderU();});
   cargarAcisReales();
   renderEstadoMes();
@@ -2714,6 +2719,24 @@ function abrirPanelAdmin(){
       if("ap-usuarios"===act.id){renderU();renderDuplicados();}
     });
   },60000);
+}
+function avisoPlazoValidacion(){
+  if(!sesionAdmin)return;
+  const t=Date.now();
+  if(t<=MES_FIN)return;                       // solo tras cerrar el mes
+  document.querySelectorAll(".aviso-plazo").forEach(el=>el.remove());
+  const venc=t>FIN_VALIDACION;
+  const dias=Math.max(0,Math.ceil((FIN_VALIDACION-t)/86400000));
+  document.querySelectorAll("#ap-valida,#ap-reconoc,#ap-acis,#ap-presencial").forEach(p=>{
+    const d=document.createElement("div");
+    d.className="aviso-plazo";
+    d.style.cssText="border-radius:10px;padding:10px 12px;font-size:11px;font-weight:700;margin-bottom:10px;"
+      +(venc?"background:#fef2f2;border:1.5px solid #fecaca;color:#991b1b;":"background:#fef3c7;border:1.5px solid var(--am);color:#92400e;");
+    d.innerHTML=venc
+      ? "⏰ El plazo de validación venció el 6 de noviembre. Los resultados se entregan el 9 de noviembre."
+      : "⏰ Plazo de validación hasta el <strong>6 de noviembre</strong> ("+dias+" día(s)). Los resultados se entregan el <strong>9 de noviembre</strong>. Lo que no se valide no suma XP.";
+    p.insertBefore(d,p.firstChild);
+  });
 }
 function aplicarPermisos(){
   if(!sesionAdmin)return;
@@ -3391,6 +3414,8 @@ function avisoFallo(estado,contenedor){
 const MES_INICIO=new Date(2026,9,1).getTime();  // 1 de octubre de 2026
 const SEMANA_MS=7*24*60*60*1000;
 const MES_FIN=new Date(2026,9,31,23,59,59,999).getTime();
+const FIN_VALIDACION=new Date(2026,10,6,23,59,59,999).getTime();  // 6 de noviembre: último día para validar
+const FECHA_RESULTADOS=new Date(2026,10,9).getTime();             // 9 de noviembre: entrega de resultados
 const CORTE_LIMPIEZA=new Date(2026,9,5,0,0,0,0).getTime();  // reinicio: borra lo anterior al 5 de octubre  // 31 de octubre de 2026
 const INICIO_SEMANA={1:new Date(2026,9,1).getTime(),2:new Date(2026,9,11).getTime(),3:new Date(2026,9,18).getTime(),4:new Date(2026,9,25).getTime()};
 function rangoSemana(s){
@@ -3497,7 +3522,9 @@ setInterval(aplicarCierreMes,600000);
   if(!campanaActiva()){
     e.innerHTML=Date.now()<MES_INICIO
       ? '🗓️ El Mes HSEQ Boost XP va del <strong>1 al 31 de octubre</strong> · practica libremente, el XP cuenta desde el 1'
-      : '🏁 El Mes HSEQ Boost XP cerró el <strong>31 de octubre a las 11:59 p. m.</strong>'+(participante?' · Tu XP final: <strong>'+participante.xp+'</strong>':'');
+      : (Date.now()<FECHA_RESULTADOS
+          ? '🏁 Mes cerrado · validación HSEQ hasta el <strong>6 de nov</strong> · resultados el <strong>9 de nov</strong>'+(participante?' · Tu XP: <strong>'+participante.xp+'</strong>':'')
+          : '🏆 Resultados finales'+(participante?' · Tu XP final: <strong>'+participante.xp+'</strong>':''));
     return;
   }
   e.innerHTML=participante?"⭐ "+participante.nombre+' · Tu XP acumulado: <span id="global-xp">'+participante.xp+"</span>":'⚠️ <a href="#" onclick="N(\'registro\',null);return false;" style="color:var(--az);text-decoration:underline;">Regístrate</a> para empezar a acumular tu XP';
