@@ -1689,14 +1689,15 @@ window.addEventListener("unhandledrejection",function(ev){
           <button class="btn bp bw" onclick="nivelarCalidadPesv()">⬆️ Nivelar XP ya otorgado</button>
         </div>
         <div class="card" style="border:2px solid var(--na);margin-bottom:10px;">
-          <div class="st" style="color:var(--na);">📅 XP ganado antes de tiempo</div>
+          <div class="st" style="color:var(--na);">📅 Limpiar actividades de semanas aún no abiertas</div>
           <div style="background:#fff7ed;border:.5px solid #fed7aa;border-radius:8px;padding:9px;font-size:10px;color:#9a3412;margin-bottom:10px;line-height:1.5;">
-            Revisa el XP obtenido en actividades de las semanas 2, 3 y 4 <strong>antes de que esas semanas se habilitaran</strong>.<br>
-            Primero consulta el detalle; luego decides si revertirlo.
+            Encuentra lo que se hizo en actividades de las semanas 2, 3 y 4 (incluida Ruta Saludable) <strong>antes de la fecha en que se abren</strong>.<br>
+            Elimina por completo: el <strong>XP</strong>, los <strong>intentos</strong>, los <strong>envíos de compromiso</strong> y los <strong>registros de Ruta Saludable</strong>, y descuenta el XP a cada persona.<br>
+            Primero toca <strong>Revisar</strong> para ver exactamente qué se va a borrar. Se puede repetir sin riesgo: solo toca lo anterior a la apertura de cada semana.
           </div>
           <div style="display:flex;gap:6px;margin-bottom:8px;">
-            <button class="btn bo bw" onclick="auditarAnticipado()">🔎 Revisar</button>
-            <button class="btn bro bw" onclick="revertirAnticipado()">↩️ Revertir ese XP</button>
+            <button class="btn bo bw" onclick="auditarSemanasFuturas()">🔎 Revisar</button>
+            <button class="btn bro bw" onclick="limpiarSemanasFuturas()">🗑️ Eliminar lo encontrado</button>
           </div>
           <div id="antic-estado" style="font-size:11px;"></div>
         </div>
@@ -2435,6 +2436,110 @@ async function nivelarCalidadPesv(){
     console.error(err);
     log('<div class="notif ny"><div class="ni">⚠️</div><div class="nb"><div class="nt">No se pudo completar</div><div class="nm">Detalle: '+(err&&err.message||err)+'</div></div></div>');
   }
+}
+
+/* ===== LIMPIEZA DE ACTIVIDADES HECHAS ANTES DE QUE SU SEMANA SE ABRIERA ===== */
+function iniSemanaAct(act){const s=semanaDeActividad(act);return(s&&s>1)?rangoSemana(s).ini:null;}
+function fueAntes(act,ts){const ini=iniSemanaAct(act);return ini!==null&&(ts||0)<ini;}
+let FUT=null;
+async function recolectarSemanasFuturas(){
+  const [ev,it,va,ru,pa]=await Promise.all([
+    dbFS.collection("xp_eventos").get(),
+    dbFS.collection("intentos").get(),
+    dbFS.collection("validaciones").get(),
+    dbFS.collection("ruta_saludable").get(),
+    dbFS.collection("participantes").get()]);
+  const iniRuta=rangoSemana(3).ini;
+  const nombres={};
+  pa.docs.forEach(d=>{nombres[d.id]=d.data().nombre||d.id;});
+  return {
+    nombres,
+    todosEventos:ev.docs,
+    eventos:ev.docs.filter(d=>{const v=d.data();return fueAntes((v.actividad||"").split(":")[0].trim(),v.timestamp);}),
+    intentos:it.docs.filter(d=>{const v=d.data();return fueAntes(v.actividad,v.timestamp);}),
+    validaciones:va.docs.filter(d=>{const v=d.data();return fueAntes(v.actividad,v.timestamp);}),
+    rutas:ru.docs.filter(d=>(d.data().timestamp||0)<iniRuta)
+  };
+}
+async function auditarSemanasFuturas(){
+  if(!dbFS)return void alert("Sin conexión a la base de datos.");
+  const est=E("antic-estado"), log=t=>{if(est)est.innerHTML=t;};
+  try{
+    log("⏳ Revisando XP, intentos, compromisos y Ruta Saludable...");
+    FUT=await recolectarSemanasFuturas();
+    const total=FUT.eventos.length+FUT.intentos.length+FUT.validaciones.length+FUT.rutas.length;
+    if(!total){
+      log('<div class="notif nv"><div class="ni">✅</div><div class="nb"><div class="nt">No hay nada que limpiar</div><div class="nm">Nadie realizó actividades de las semanas 2, 3 o 4 antes de su fecha de apertura.</div></div></div>');
+      return;
+    }
+    const porAct={}, porPers={};
+    const sumar=(act,campo,pid,xp)=>{
+      const a=porAct[act]=porAct[act]||{sem:semanaDeActividad(act)||3,ev:0,xp:0,it:0,va:0,ru:0};
+      a[campo]++; if(xp)a.xp+=xp;
+      if(pid){const p=porPers[pid]=porPers[pid]||{xp:0,n:0};p.n++;p.xp+=xp||0;}
+    };
+    FUT.eventos.forEach(d=>{const v=d.data();sumar((v.actividad||"").split(":")[0].trim(),"ev",v.participanteId,v.xp||0);});
+    FUT.intentos.forEach(d=>{const v=d.data();sumar(v.actividad,"it",v.participanteId,0);});
+    FUT.validaciones.forEach(d=>{const v=d.data();sumar(v.actividad,"va",v.participanteId,0);});
+    FUT.rutas.forEach(d=>{const v=d.data();sumar("Ruta Saludable","ru",v.participanteId,0);});
+    const totXP=FUT.eventos.reduce((s,d)=>s+(d.data().xp||0),0);
+    const filasAct=Object.entries(porAct).sort((a,b)=>a[1].sem-b[1].sem||b[1].xp-a[1].xp).map(([n,a])=>
+      '<tr><td style="font-size:10px;">S'+a.sem+'</td><td style="font-weight:700;font-size:11px;">'+n+'</td><td style="color:var(--xp);font-weight:800;">'+a.xp+' XP</td><td>'+a.ev+'</td><td>'+a.it+'</td><td>'+a.va+'</td><td>'+a.ru+'</td></tr>').join("");
+    const filasPers=Object.entries(porPers).sort((a,b)=>b[1].xp-a[1].xp).map(([id,p])=>
+      '<tr><td style="font-weight:700;font-size:11px;">'+(FUT.nombres[id]||id)+'</td><td style="color:var(--xp);font-weight:800;">'+p.xp+' XP</td><td style="font-size:10px;">'+p.n+' registro(s)</td></tr>').join("");
+    log('<div class="notif ny" style="margin-bottom:8px;"><div class="ni">📅</div><div class="nb"><div class="nt">'+Object.keys(porPers).length+' persona(s) hicieron actividades antes de tiempo</div>'
+      +'<div class="nm"><strong>'+FUT.eventos.length+'</strong> evento(s) de XP (<strong>'+totXP+' XP</strong>) · <strong>'+FUT.intentos.length+'</strong> intento(s) · <strong>'+FUT.validaciones.length+'</strong> envío(s) de compromiso · <strong>'+FUT.rutas.length+'</strong> registro(s) de Ruta Saludable</div></div></div>'
+      +'<div style="font-size:11px;font-weight:800;color:var(--az);margin:6px 0 4px;">Por actividad</div>'
+      +'<div style="max-height:260px;overflow-y:auto;margin-bottom:8px;"><table class="tbl"><thead><tr><th>Sem</th><th>Actividad</th><th>XP</th><th>Eventos</th><th>Intentos</th><th>Compromisos</th><th>Ruta</th></tr></thead><tbody>'+filasAct+'</tbody></table></div>'
+      +'<div style="font-size:11px;font-weight:800;color:var(--az);margin:6px 0 4px;">Por persona</div>'
+      +'<div style="max-height:260px;overflow-y:auto;"><table class="tbl"><thead><tr><th>Participante</th><th>XP a descontar</th><th>Registros</th></tr></thead><tbody>'+filasPers+'</tbody></table></div>');
+  }catch(err){console.error(err);log('<div class="notif ny"><div class="ni">⚠️</div><div class="nb"><div class="nt">Error</div><div class="nm">'+(err&&err.message||err)+'</div></div></div>');}
+}
+async function limpiarSemanasFuturas(){
+  if(!sesionAdmin||"general"!==sesionAdmin.rol)return void alert("Solo el administrador general puede ejecutar esta acción.");
+  if(!FUT)return void alert("Primero toca «Revisar» para ver exactamente qué se va a eliminar.");
+  const est=E("antic-estado"), log=t=>{if(est)est.innerHTML=t;};
+  const todos=[].concat(FUT.eventos,FUT.intentos,FUT.validaciones,FUT.rutas);
+  if(!todos.length)return void alert("No hay nada que eliminar.");
+  const xpPorPart={};
+  FUT.eventos.forEach(d=>{const v=d.data();if(v.participanteId)xpPorPart[v.participanteId]=(xpPorPart[v.participanteId]||0)+(v.xp||0);});
+  const totXP=Object.values(xpPorPart).reduce((a,b)=>a+b,0);
+  const afectados=new Set();
+  todos.forEach(d=>{const v=d.data();if(v.participanteId)afectados.add(v.participanteId);});
+  if(!confirm("Se eliminarán:\n\n· "+FUT.eventos.length+" evento(s) de XP ("+totXP+" XP)\n· "+FUT.intentos.length+" intento(s)\n· "+FUT.validaciones.length+" envío(s) de compromiso\n· "+FUT.rutas.length+" registro(s) de Ruta Saludable\n\nAfecta a "+afectados.size+" persona(s). Quedarán libres para hacer esas actividades cuando se abran.\n\nEsta acción NO se puede deshacer.\n\n¿Continuar?"))return;
+  if(!confirm("Confirmación final: ¿eliminar todo lo anterior?"))return;
+  try{
+    let borrados=0;
+    for(let i=0;i<todos.length;i+=400){
+      const lote=dbFS.batch();
+      todos.slice(i,i+400).forEach(d=>lote.delete(d.ref));
+      await lote.commit();
+      borrados=Math.min(todos.length,i+400);
+      log("⏳ Eliminados "+borrados+" de "+todos.length+" registros...");
+    }
+    log("⏳ Descontando el XP a cada persona...");
+    const ids=Object.keys(xpPorPart).filter(id=>xpPorPart[id]>0);
+    for(let i=0;i<ids.length;i+=300){
+      const lote=dbFS.batch();
+      ids.slice(i,i+300).forEach(id=>lote.update(dbFS.collection("participantes").doc(id),{xp:firebase.firestore.FieldValue.increment(-xpPorPart[id])}));
+      await lote.commit();
+    }
+    // Verificación: el XP de cada persona debe coincidir con la suma de sus eventos que quedaron
+    log("⏳ Verificando que el XP quedó correcto...");
+    const borr=new Set(FUT.eventos.map(d=>d.id)), suma={};
+    FUT.todosEventos.forEach(d=>{if(borr.has(d.id))return;const v=d.data();if(v.participanteId)suma[v.participanteId]=(suma[v.participanteId]||0)+(v.xp||0);});
+    const pa=await dbFS.collection("participantes").get();
+    let difs=0;
+    pa.docs.forEach(d=>{if(afectados.has(d.id)&&(d.data().xp||0)!==(suma[d.id]||0))difs++;});
+    completadasSet=new Set();intentosPorAct={};xpPorAct={};conteoAct={};
+    if(participante&&participante.fid&&afectados.has(participante.fid)){
+      try{const m=await dbFS.collection("participantes").doc(participante.fid).get();if(m.exists){participante.xp=m.data().xp||0;renderXpBar();}await cargarCompletadas();}catch(e){}
+    }
+    FUT=null;
+    log('<div class="notif nv"><div class="ni">🗑️</div><div class="nb"><div class="nt">Limpieza completada</div><div class="nm">'+todos.length+' registro(s) eliminados · '+totXP+' XP descontados a '+ids.length+' persona(s). Las actividades quedan libres para hacerlas cuando abra su semana.'
+      +(difs?'<br>⚠️ <strong>'+difs+' persona(s) con diferencia de XP</strong> (puede ser actividad en curso). Usa «♻️ Recalcular XP desde los eventos» para dejarlo exacto.':'<br>✅ XP verificado: coincide con los eventos de cada persona.')+'</div></div></div>');
+    await cargarDatosAdminReales();renderU();renderEmps();
+  }catch(err){console.error(err);log('<div class="notif ny"><div class="ni">⚠️</div><div class="nb"><div class="nt">No se pudo completar</div><div class="nm">Detalle: '+(err&&err.message||err)+'<br>Vuelve a tocar «Revisar» y luego «Eliminar»: es seguro repetirlo. Si el XP quedó desajustado usa «Recalcular XP desde los eventos».</div></div></div>');}
 }
 async function auditarAnticipado(){
   if(!dbFS)return void alert("Sin conexión a la base de datos.");
@@ -3421,6 +3526,7 @@ function registrarIntento(act,variante){
   return intentosPorAct[k];
 }
 async function otorgarXPActividad(xp,act,variante,extra){
+  if(!actividadAbierta(act))return {estado:"sin_xp",msg:msgActividadCerrada(act)};
   const k=claveAct(act,variante), etiqueta=act+(variante?": "+variante:"");
   if(intentosDe(act,variante)>=MAX_INTENTOS)
     return {estado:"sin_xp",msg:"Ya usaste tus "+MAX_INTENTOS+" intentos con puntos en esta actividad. Puedes seguir practicando, pero ya no acumula XP."};
@@ -3616,7 +3722,21 @@ setInterval(aplicarCierreMes,600000);
   const contA=E("apertura-resultado");
   if(contA)avisoEnviado("apertura-resultado","Apertura");
   else alert("¡Compromiso enviado! ❤️\n\nEl HSEQ de tu centro lo revisará. Al validarlo recibirás +30 XP.");
-}function togglePanelExclusive(e){const a=E("pan-"+e),r=a&&"block"===a.style.display;document.querySelectorAll(".week-panel").forEach(e=>e.style.display="none"),a&&(a.style.display=r?"none":"block")}function irAJuegos(e){N("juegos",null),selJT(e,null)}function comprimirImagen(archivo,maxDim,calidad){
+}function panelBloqueado(el){
+  const scr=el&&el.closest&&el.closest(".scr");
+  const m=scr&&/^scr-s([1-4])$/.exec(scr.id);
+  return !!(m&&!semanaDisponible(+m[1]));
+}
+function actividadAbierta(act){
+  if(esAdminGeneral())return true;
+  const s=semanaDeActividad(act);
+  return !s||s<=1||Date.now()>=rangoSemana(s).ini;
+}
+function msgActividadCerrada(act){
+  const s=semanaDeActividad(act), d=new Date(rangoSemana(s).ini);
+  return "Esta actividad se habilita el "+d.getDate()+" de octubre (Semana "+s+"). Aún no puedes realizarla.";
+}
+function togglePanelExclusive(e){const a=E("pan-"+e);if(a&&panelBloqueado(a))return;const r=a&&"block"===a.style.display;document.querySelectorAll(".week-panel").forEach(e=>e.style.display="none"),a&&(a.style.display=r?"none":"block")}function irAJuegos(e){N("juegos",null),selJT(e,null)}function comprimirImagen(archivo,maxDim,calidad){
   return new Promise((resolve,reject)=>{
     const lector=new FileReader();
     lector.onload=e=>{
@@ -3859,6 +3979,7 @@ function abrirQueHarias(){togglePanelExclusive("queharias"),iniciarQuizGenerico(
       if(!yaHecho.empty){alert("✅ Ya completaste esta actividad — no puedes volver a enviarla.");return;}
     }catch(err){console.warn("No se pudo verificar el envío previo",err);}
   }
+  if(!actividadAbierta("Mi Familia Me Espera"))return void alert(msgActividadCerrada("Mi Familia Me Espera"));
   if(await yaEnvioValidacion("Mi Familia Me Espera")){alert("✅ Ya enviaste esta actividad.");return;}
   const txtF=E("fam-texto").value.trim();
   const fotosF=(fotosGen.fam||[]).map(f=>f.dataUrl);
@@ -3907,6 +4028,7 @@ function enviarRuta(){
   const fotos=(fotosGen.ruta||[]).map(f=>f.dataUrl);
   if(!fotos.length)return av("ny","📷","Falta la foto de hoy","Adjunta una foto haciendo la actividad. Es obligatoria para registrar el día.");
   if(!participante)return av("ny","⚠️","Debes registrarte primero","Así tu actividad queda a tu nombre.");
+  if(!actividadAbierta("Ruta Saludable"))return av("na2","🔒","Esta actividad aún no está disponible",msgActividadCerrada("Ruta Saludable"));
   const hoy=diaClave(Date.now());
   if(rutaDias.indexOf(hoy)>=0)return av("ny","📅","Ya registraste tu actividad de hoy","Vuelve mañana para sumar el siguiente día del reto.");
   const hechos=[...new Set(rutaDias)].length;
@@ -3951,6 +4073,7 @@ function abrirResiduos(){togglePanelExclusive("residuos"),iniciarQuizGenerico("s
       if(!yaHecho.empty){alert("✅ Ya registraste tu compromiso final — no puedes volver a enviarlo.");return;}
     }catch(err){console.warn("No se pudo verificar el envío previo",err);}
   }
+  if(!actividadAbierta("Compromiso Final"))return void alert(msgActividadCerrada("Compromiso Final"));
   if(await yaEnvioValidacion("Compromiso Final")){alert("✅ Ya enviaste tu Compromiso Final.");return;}
   const txtC=(E("comp-texto")||{}).value||"";
   if(!txtC.trim())return void alert("Escribe tu compromiso antes de enviarlo.");
